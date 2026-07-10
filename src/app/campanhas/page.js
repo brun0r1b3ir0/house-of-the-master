@@ -91,7 +91,7 @@ function FeedComCampanhas({ campanhas }) {
         {/* Card de "adicionar" — segue o padrão dashed das fichas vazias do guia visual */}
         <Link
           href="/campanhas/nova"
-          className="bg-sheet border border-dashed border-paper-line p-6 flex flex-col items-center justify-center gap-2 text-center hover:border-wax transition-colors min-h-[160px]"
+          className="bg-sheet border border-dashed border-paper-line p-6 flex flex-col items-center justify-center gap-2 text-center hover:border-wax transition-colors min-h-40"
         >
           <span className="font-display text-2xl text-ink-faint">+</span>
           <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-ink-faint">
@@ -112,7 +112,7 @@ function CampanhaCard({ campanha }) {
       href={`/campanhas/${campanha.id}/${rotaPapel}`}
       className="bg-sheet border border-paper-line p-6 hover:border-wax transition-colors"
     >
-      <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink-faint mb-2">
+      <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint mb-2">
         Campanha
       </p>
       <h3 className="font-display text-lg font-semibold text-ink mb-4">
