@@ -1,7 +1,8 @@
-// src/app/campanhas/nova/page.js
+
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 const sistemasDisponiveis = [
@@ -15,11 +16,11 @@ export default function NovaCampanhaPage() {
   const [sistema, setSistema] = useState(sistemasDisponiveis[0]);
   const [descricao, setDescricao] = useState("");
   const [maxJogadores, setMaxJogadores] = useState("");
-  const [privacidade, setPrivacidade] = useState("privada");
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
+  const router = useRouter();
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setErro("");
 
@@ -30,11 +31,36 @@ export default function NovaCampanhaPage() {
 
     setCarregando(true);
 
-    // Aqui depois entra a chamada real: POST /campanhas
-    // O backend cria a Campanha e já gera a Participacao do usuário como MESTRE.
-    setTimeout(() => {
+    try {
+      const res = await fetch("/api/campanhas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome: nome.trim(),
+          sistema,
+          descricao: descricao.trim() || null,
+          maxJogadores: maxJogadores ? Number(maxJogadores) : null,
+        }),
+      });
+
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
+
+      if (!res.ok) {
+        const dados = await res.json().catch(() => ({}));
+        setErro(dados.mensagem || "Não foi possível criar a campanha.");
+        return;
+      }
+
+      router.push("/campanhas");
+      router.refresh();
+    } catch {
+      setErro("Não foi possível criar a campanha agora. Tente novamente.");
+    } finally {
       setCarregando(false);
-    }, 1200);
+    }
   }
 
   return (
@@ -63,6 +89,7 @@ export default function NovaCampanhaPage() {
           </h1>
           <p className="font-body text-sm text-ink-soft mb-8">
             Ao criar, você se torna automaticamente o Mestre desta campanha.
+            Um código de convite é gerado para você passar aos jogadores.
           </p>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-6">
@@ -125,43 +152,23 @@ export default function NovaCampanhaPage() {
               />
             </div>
 
-            {/* Linha com dois campos lado a lado no desktop, empilhados no mobile */}
-            <div className="flex flex-col sm:flex-row gap-6">
-              <div className="flex flex-col gap-2 flex-1">
-                <label
-                  htmlFor="maxJogadores"
-                  className="font-mono text-[11px] uppercase tracking-[0.08em] text-ink-faint"
-                >
-                  Máx. de jogadores <span className="normal-case text-ink-faint/70">(opcional)</span>
-                </label>
-                <input
-                  id="maxJogadores"
-                  type="number"
-                  min="1"
-                  value={maxJogadores}
-                  onChange={(e) => setMaxJogadores(e.target.value)}
-                  placeholder="Ex: 6"
-                  className="bg-transparent border-b border-paper-line pb-2 font-body text-[15px] text-ink placeholder:text-ink-faint outline-none focus:border-wax transition-colors"
-                />
-              </div>
-
-              <div className="flex flex-col gap-2 flex-1">
-                <label
-                  htmlFor="privacidade"
-                  className="font-mono text-[11px] uppercase tracking-[0.08em] text-ink-faint"
-                >
-                  Privacidade
-                </label>
-                <select
-                  id="privacidade"
-                  value={privacidade}
-                  onChange={(e) => setPrivacidade(e.target.value)}
-                  className="bg-transparent border-b border-paper-line pb-2 font-body text-[15px] text-ink outline-none focus:border-wax transition-colors appearance-none cursor-pointer"
-                >
-                  <option value="privada">Privada (só por convite)</option>
-                  <option value="publica">Pública (aparece na busca)</option>
-                </select>
-              </div>
+            {/* Máx. de jogadores */}
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="maxJogadores"
+                className="font-mono text-[11px] uppercase tracking-[0.08em] text-ink-faint"
+              >
+                Máx. de jogadores <span className="normal-case text-ink-faint/70">(opcional)</span>
+              </label>
+              <input
+                id="maxJogadores"
+                type="number"
+                min="1"
+                value={maxJogadores}
+                onChange={(e) => setMaxJogadores(e.target.value)}
+                placeholder="Ex: 6"
+                className="bg-transparent border-b border-paper-line pb-2 font-body text-[15px] text-ink placeholder:text-ink-faint outline-none focus:border-wax transition-colors"
+              />
             </div>
 
             {erro && (

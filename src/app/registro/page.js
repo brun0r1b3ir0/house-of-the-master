@@ -3,6 +3,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 
 export default function RegistroPage() {
   const [nome, setNome] = useState("");
@@ -11,8 +13,9 @@ export default function RegistroPage() {
   const [confirmarSenha, setConfirmarSenha] = useState("");
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
+  const router = useRouter();
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setErro("");
 
@@ -33,18 +36,51 @@ export default function RegistroPage() {
 
     setCarregando(true);
 
-    // Aqui depois entra a chamada real (API de registro).
-    setTimeout(() => {
+    try {
+      const res = await fetch("/api/registro", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome, email, senha }),
+      });
+
+      const dados = await res.json();
+
+      if (!res.ok) {
+        setErro(dados.mensagem || "Não foi possível criar a conta.");
+        return;
+      }
+
+      // Conta criada: já entra direto, sem pedir login de novo
+      const login = await signIn("credentials", {
+        email,
+        senha,
+        redirect: false,
+      });
+
+      if (login?.error) {
+        router.push("/login");
+        return;
+      }
+
+      router.push("/campanhas");
+      router.refresh();
+    } catch {
+      setErro("Não foi possível criar a conta agora. Tente novamente.");
+    } finally {
       setCarregando(false);
-    }, 1200);
+    }
   }
 
   return (
     <main className="min-h-screen bg-paper flex items-center justify-center px-6 py-16">
       <div className="w-full max-w-md">
 
-        {/* Marca — mesmo padrão do login */}
-        <div className="flex items-center gap-2.5 justify-center mb-10">
+        {/* Marca — agora é link para a landing */}
+        <Link
+          href="/"
+          aria-label="Voltar à página inicial"
+          className="flex items-center gap-2.5 justify-center mb-10 w-fit mx-auto"
+        >
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
             <rect x="1" y="1" width="20" height="20" stroke="#22221E" strokeWidth="1" />
             <line x1="5" y1="7" x2="17" y2="7" stroke="#7A2E27" strokeWidth="1" />
@@ -54,7 +90,7 @@ export default function RegistroPage() {
           <span className="font-display font-semibold text-sm tracking-wide text-ink">
             House of the Master
           </span>
-        </div>
+        </Link>
 
         <div className="bg-sheet border border-paper-line p-8 sm:p-10">
           <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-wax mb-3">
@@ -159,6 +195,13 @@ export default function RegistroPage() {
             Entrar
           </Link>
         </p>
+
+        <Link
+          href="/"
+          className="block w-fit mx-auto font-mono text-[11px] uppercase tracking-[0.08em] text-ink-faint hover:text-ink transition-colors mt-8"
+        >
+          Voltar ao início
+        </Link>
       </div>
     </main>
   );

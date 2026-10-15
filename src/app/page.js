@@ -1,4 +1,11 @@
-export default function Home() {
+// src/app/page.js
+import Link from "next/link";
+import { auth } from "@/auth";
+
+export default async function Home() {
+  const session = await auth();
+  const logado = !!session;
+
   return (
     <>
       <header className="sticky top-0 z-20 bg-paper border-b border-paper-line">
@@ -19,12 +26,29 @@ export default function Home() {
             <a href="#momentos" className="hidden md:inline font-mono text-xs tracking-wide uppercase text-ink-soft hover:text-ink">
               Uma sessão
             </a>
-            <a href="#" className="font-mono text-xs uppercase px-3 sm:px-4 py-2 rounded border border-ink hover:bg-ink hover:text-paper transition-colors">
-              Entrar
-            </a>
-            <a href="#" className="hidden sm:inline-block font-mono text-xs uppercase px-4 py-2 rounded bg-wax text-paper hover:opacity-90 transition-opacity">
-              Criar conta
-            </a>
+            {logado ? (
+              <Link
+                href="/campanhas"
+                className="font-mono text-xs uppercase px-4 py-2 rounded bg-wax text-paper hover:opacity-90 transition-opacity"
+              >
+                Minhas campanhas
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="font-mono text-xs uppercase px-3 sm:px-4 py-2 rounded border border-ink hover:bg-ink hover:text-paper transition-colors"
+                >
+                  Entrar
+                </Link>
+                <Link
+                  href="/registro"
+                  className="hidden sm:inline-block font-mono text-xs uppercase px-4 py-2 rounded bg-wax text-paper hover:opacity-90 transition-opacity"
+                >
+                  Criar conta
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       </header>
@@ -45,12 +69,29 @@ export default function Home() {
               a cara daquela campanha específica.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
-              <a href="#" className="text-center font-mono text-xs uppercase px-5 py-3 sm:py-2.5 rounded bg-wax text-paper hover:opacity-90 transition-opacity">
-                Criar minha conta
-              </a>
-              <a href="#" className="text-center font-mono text-xs uppercase px-5 py-3 sm:py-2.5 rounded border border-ink hover:bg-ink hover:text-paper transition-colors">
-                Já tenho conta
-              </a>
+              {logado ? (
+                <Link
+                  href="/campanhas"
+                  className="text-center font-mono text-xs uppercase px-5 py-3 sm:py-2.5 rounded bg-wax text-paper hover:opacity-90 transition-opacity"
+                >
+                  Ir para minhas campanhas
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    href="/registro"
+                    className="text-center font-mono text-xs uppercase px-5 py-3 sm:py-2.5 rounded bg-wax text-paper hover:opacity-90 transition-opacity"
+                  >
+                    Criar minha conta
+                  </Link>
+                  <Link
+                    href="/login"
+                    className="text-center font-mono text-xs uppercase px-5 py-3 sm:py-2.5 rounded border border-ink hover:bg-ink hover:text-paper transition-colors"
+                  >
+                    Já tenho conta
+                  </Link>
+                </>
+              )}
             </div>
           </div>
 
@@ -112,7 +153,7 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {[
               { titulo: "Os dados decidem", eyebrow: "Teste de perícia", texto: "Um teste de Força decide se a porta cede — o sistema já sabe seu valor regular, metade e um quinto.", rot: "sm:-rotate-[1.1deg]" },
-              { titulo: "Os fatores vem, o sistema recalcula", eyebrow: "Ficha em uso", texto: "Cada fator influente aplicado já atualiza os efeitos e limites da ficha, sozinho.", rot: "sm:rotate-[0.8deg]" },
+              { titulo: "Os fatores vêm, o sistema recalcula", eyebrow: "Ficha em uso", texto: "Cada fator influente aplicado já atualiza os efeitos e limites da ficha, sozinho.", rot: "sm:rotate-[0.8deg]" },
               { titulo: "O mestre vê ao vivo", eyebrow: "Tempo real", texto: "Enquanto o jogador atualiza a própria ficha, a mudança já aparece do lado do mestre.", rot: "sm:-rotate-[0.6deg]" },
               { titulo: "NPCs prontos entre cenas", eyebrow: "Do lado do mestre", texto: "Fichas de NPC's guardadas à parte, prontas pra entrar numa cena sem atrapalhar o ritmo.", rot: "sm:rotate-[1.2deg]" },
             ].map((card) => (

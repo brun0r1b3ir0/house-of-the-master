@@ -1,32 +1,43 @@
 // src/app/campanhas/page.js
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-
-// Mock temporário — isso vai virar uma chamada pra API do Spring Boot
-// (GET /campanhas do usuário logado, já vindo com o papel de cada uma
-// resolvido via Participacao). Por enquanto simula os dois cenários.
-const campanhasMock = [
-  {
-    id: "1",
-    titulo: "A Sombra Sobre Innsmouth",
-    papel: "mestre",
-    jogadores: 4,
-    sistema: "CoC homebrew",
-  },
-  {
-    id: "2",
-    titulo: "Ecos de Arkham",
-    papel: "jogador",
-    jogadores: 5,
-    sistema: "CoC homebrew",
-  },
-];
+import { signOut } from "next-auth/react";
 
 export default function FeedCampanhasPage() {
-  const [campanhas] = useState(campanhasMock);
-  // Pra testar o estado de onboarding, troque campanhasMock por [] ali em cima.
+  const [campanhas, setCampanhas] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState("");
+  const router = useRouter();
+
+  useEffect(() => {
+    async function carregar() {
+      try {
+        const res = await fetch("/api/campanhas");
+
+        if (res.status === 401) {
+          router.push("/login");
+          return;
+        }
+
+        if (!res.ok) {
+          setErro("Não foi possível carregar suas campanhas.");
+          return;
+        }
+
+        const dados = await res.json();
+        setCampanhas(dados.map((c) => ({ ...c, papel: c.papel.toLowerCase() })));
+      } catch {
+        setErro("Não foi possível carregar suas campanhas.");
+      } finally {
+        setCarregando(false);
+      }
+    }
+
+    carregar();
+  }, [router]);
 
   const temCampanhas = campanhas.length > 0;
 
@@ -47,12 +58,23 @@ export default function FeedCampanhasPage() {
               House of the Master
             </span>
           </div>
-          <button className="font-mono text-[11px] uppercase tracking-[0.08em] text-ink-faint hover:text-ink transition-colors">
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="font-mono text-[11px] uppercase tracking-[0.08em] text-ink-faint hover:text-ink transition-colors"
+          >
             Sair
           </button>
         </header>
 
-        {temCampanhas ? (
+        {carregando ? (
+          <p className="font-mono text-[12px] text-ink-faint text-center py-16">
+            Carregando...
+          </p>
+        ) : erro ? (
+          <p className="font-mono text-[12px] text-wax text-center py-16">
+            {erro}
+          </p>
+        ) : temCampanhas ? (
           <FeedComCampanhas campanhas={campanhas} />
         ) : (
           <FeedOnboarding />
@@ -103,41 +125,78 @@ function FeedComCampanhas({ campanhas }) {
   );
 }
 
-// Card individual de campanha — mesmo esqueleto do .sheet-card do guia visual
+// Card individual de campanha — mesmo esqueleto do .sheet-card do guia visual.
+// A área de cima é o link; a faixa do código (só do Mestre) fica fora do link
+// para o botão de copiar não disparar a navegação.
 function CampanhaCard({ campanha }) {
+  const [copiado, setCopiado] = useState(false);
   const rotaPapel = campanha.papel === "mestre" ? "mestre" : "jogador";
 
-  return (
-    <Link
-      href={`/campanhas/${campanha.id}/${rotaPapel}`}
-      className="bg-sheet border border-paper-line p-6 hover:border-wax transition-colors"
-    >
-      <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint mb-2">
-        Campanha
-      </p>
-      <h3 className="font-display text-lg font-semibold text-ink mb-4">
-        {campanha.titulo}
-      </h3>
+  async function copiarCodigo() {
+    try {
+      await navigator.clipboard.writeText(campanha.codigoConvite);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      setCopiado(false);
+    }
+  }
 
-      <div className="flex justify-between items-end border-b border-paper-line py-2 font-mono text-xs text-ink-faint">
-        <span>seu papel</span>
-        <span className="font-body text-[15px] text-ink capitalize">
-          {campanha.papel}
-        </span>
-      </div>
-      <div className="flex justify-between items-end border-b border-paper-line py-2 font-mono text-xs text-ink-faint">
-        <span>jogadores</span>
-        <span className="font-body text-[15px] text-ink">
-          {campanha.jogadores}
-        </span>
-      </div>
-      <div className="flex justify-between items-end py-2 font-mono text-xs text-ink-faint">
-        <span>sistema</span>
-        <span className="font-body text-[15px] text-ink">
-          {campanha.sistema}
-        </span>
-      </div>
-    </Link>
+  return (
+    <div className="bg-sheet border border-paper-line hover:border-wax transition-colors flex flex-col">
+      <Link
+        href={`/campanhas/${campanha.id}/${rotaPapel}`}
+        className="block p-6 flex-1"
+      >
+        <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint mb-2">
+          Campanha
+        </p>
+        <h3 className="font-display text-lg font-semibold text-ink mb-4">
+          {campanha.titulo}
+        </h3>
+
+        <div className="flex justify-between items-end border-b border-paper-line py-2 font-mono text-xs text-ink-faint">
+          <span>seu papel</span>
+          <span className="font-body text-[15px] text-ink capitalize">
+            {campanha.papel}
+          </span>
+        </div>
+        <div className="flex justify-between items-end border-b border-paper-line py-2 font-mono text-xs text-ink-faint">
+          <span>jogadores</span>
+          <span className="font-body text-[15px] text-ink">
+            {campanha.jogadores}
+            {campanha.maxJogadores ? ` / ${campanha.maxJogadores}` : ""}
+          </span>
+        </div>
+        <div className="flex justify-between items-end py-2 font-mono text-xs text-ink-faint">
+          <span>sistema</span>
+          <span className="font-body text-[15px] text-ink">
+            {campanha.sistema}
+          </span>
+        </div>
+      </Link>
+
+      {/* Faixa do código de convite — só existe para o Mestre */}
+      {campanha.codigoConvite && (
+        <div className="border-t border-dashed border-paper-line px-6 py-3 flex items-center justify-between gap-3">
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+              Código de convite
+            </p>
+            <p className="font-mono text-[15px] text-ink tracking-wide">
+              {campanha.codigoConvite}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={copiarCodigo}
+            className="font-mono text-[11px] uppercase tracking-[0.08em] border border-paper-line text-ink-soft px-3 py-2 hover:border-ink hover:text-ink transition-colors whitespace-nowrap"
+          >
+            {copiado ? "Copiado" : "Copiar"}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 

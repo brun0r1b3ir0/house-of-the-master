@@ -1,15 +1,19 @@
+// src/app/login/page.js
 "use client";
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
+  const router = useRouter();
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setErro("");
 
@@ -20,19 +24,37 @@ export default function LoginPage() {
 
     setCarregando(true);
 
-    // Aqui depois entra a chamada real (NextAuth / API).
-    // Por enquanto, só simula o tempo de resposta.
-    setTimeout(() => {
+    try {
+      const resultado = await signIn("credentials", {
+        email,
+        senha,
+        redirect: false,
+      });
+
+      if (resultado?.error) {
+        setErro("Email ou senha inválidos.");
+        return;
+      }
+
+      router.push("/campanhas");
+      router.refresh();
+    } catch {
+      setErro("Não foi possível entrar agora. Tente novamente.");
+    } finally {
       setCarregando(false);
-    }, 1200);
+    }
   }
 
   return (
     <main className="min-h-screen bg-paper flex items-center justify-center px-6 py-16">
       <div className="w-full max-w-md">
 
-        {/* Marca, igual ao header da landing */}
-        <div className="flex items-center gap-2.5 justify-center mb-10">
+        {/* Marca — agora é link para a landing */}
+        <Link
+          href="/"
+          aria-label="Voltar à página inicial"
+          className="flex items-center gap-2.5 justify-center mb-10 w-fit mx-auto"
+        >
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
             <rect x="1" y="1" width="20" height="20" stroke="#22221E" strokeWidth="1" />
             <line x1="5" y1="7" x2="17" y2="7" stroke="#7A2E27" strokeWidth="1" />
@@ -42,7 +64,7 @@ export default function LoginPage() {
           <span className="font-display font-semibold text-sm tracking-wide text-ink">
             House of the Master
           </span>
-        </div>
+        </Link>
 
         {/* O card em si é a "ficha" — mesmo padrão dos sheet-card do guia visual */}
         <div className="bg-sheet border border-paper-line p-8 sm:p-10">
@@ -55,7 +77,6 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-6">
 
-            {/* Campo email — estilo "field-line": label mono em cima, linha embaixo, sem caixa fechada */}
             <div className="flex flex-col gap-2">
               <label
                 htmlFor="email"
@@ -73,7 +94,6 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* Campo senha — mesmo padrão */}
             <div className="flex flex-col gap-2">
               <label
                 htmlFor="senha"
@@ -91,14 +111,12 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* Erro — só aparece se existir, e usa o mesmo tom de "acento" que o wax do sistema */}
             {erro && (
               <p className="font-mono text-[12px] text-wax">
                 {erro}
               </p>
             )}
 
-            {/* Botão primário — igual ao .btn.primary do guia visual */}
             <button
               type="submit"
               disabled={carregando}
@@ -109,13 +127,19 @@ export default function LoginPage() {
           </form>
         </div>
 
-        {/* Link pra registro, fora do card — mais leve, texto corrido */}
         <p className="font-body text-sm text-ink-soft text-center mt-6">
           Ainda não tem conta?{" "}
           <Link href="/registro" className="text-wax hover:underline">
             Criar conta
           </Link>
         </p>
+
+        <Link
+          href="/"
+          className="block w-fit mx-auto font-mono text-[11px] uppercase tracking-[0.08em] text-ink-faint hover:text-ink transition-colors mt-8"
+        >
+          Voltar ao início
+        </Link>
       </div>
     </main>
   );

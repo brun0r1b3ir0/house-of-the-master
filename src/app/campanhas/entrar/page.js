@@ -1,37 +1,16 @@
 // src/app/campanhas/entrar/page.js
 "use client";
-
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
-
-// Mock de campanhas públicas — futuramente vem de GET /campanhas/publicas?busca=...
-const campanhasPublicasMock = [
-  {
-    id: "3",
-    titulo: "Ecos de Arkham",
-    mestre: "Marina S.",
-    jogadores: 4,
-    maxJogadores: 6,
-    sistema: "CoC homebrew",
-  },
-  {
-    id: "4",
-    titulo: "O Farol de Kingsport",
-    mestre: "Diego A.",
-    jogadores: 2,
-    maxJogadores: 5,
-    sistema: "Call of Cthulhu (padrão)",
-  },
-];
 
 export default function EntrarCampanhaPage() {
   const [codigo, setCodigo] = useState("");
   const [erroCodigo, setErroCodigo] = useState("");
   const [carregandoCodigo, setCarregandoCodigo] = useState(false);
+  const router = useRouter();
 
-  const [busca, setBusca] = useState("");
-
-  function handleEntrarComCodigo(e) {
+  async function handleEntrarComCodigo(e) {
     e.preventDefault();
     setErroCodigo("");
 
@@ -42,16 +21,33 @@ export default function EntrarCampanhaPage() {
 
     setCarregandoCodigo(true);
 
-    // Aqui depois entra: POST /campanhas/entrar { codigo }
-    // O backend valida o código e cria a Participacao como JOGADOR.
-    setTimeout(() => {
-      setCarregandoCodigo(false);
-    }, 1200);
-  }
+    try {
+      const res = await fetch("/api/campanhas/entrar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codigo }),
+      });
 
-  const resultadosFiltrados = campanhasPublicasMock.filter((c) =>
-    c.titulo.toLowerCase().includes(busca.toLowerCase())
-  );
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
+
+      const dados = await res.json();
+
+      if (!res.ok) {
+        setErroCodigo(dados.mensagem || "Não foi possível entrar na campanha.");
+        return;
+      }
+
+      router.push("/campanhas");
+      router.refresh();
+    } catch {
+      setErroCodigo("Não foi possível entrar agora. Tente novamente.");
+    } finally {
+      setCarregandoCodigo(false);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-paper px-4 sm:px-6 py-10">
@@ -74,17 +70,17 @@ export default function EntrarCampanhaPage() {
           Entrar em campanha
         </p>
         <h1 className="font-display text-2xl sm:text-3xl font-semibold text-ink mb-8">
-          Como você quer entrar?
+          Digite o código de convite
         </h1>
 
-        {/* Bloco 1: código de convite — o caminho pra campanhas privadas */}
-        <div className="bg-sheet border border-paper-line p-6 sm:p-8 mb-6">
+        {/* Código de convite — único caminho de entrada */}
+        <div className="bg-sheet border border-paper-line p-6 sm:p-8">
           <h2 className="font-display text-lg font-semibold text-ink mb-1">
             Com código de convite
           </h2>
           <p className="font-body text-sm text-ink-soft mb-6">
-            Use quando o mestre te passou um código diretamente. Funciona para
-            campanhas privadas e públicas.
+            Peça o código ao mestre da campanha. Ao entrar, você participa como
+            jogador.
           </p>
 
           <form
@@ -103,7 +99,8 @@ export default function EntrarCampanhaPage() {
                 type="text"
                 value={codigo}
                 onChange={(e) => setCodigo(e.target.value)}
-                placeholder="Ex: INNSMOUTH-7X2"
+                placeholder="Ex: K7X2-9QPM"
+                autoComplete="off"
                 className="bg-transparent border-b border-paper-line pb-2 font-mono text-[15px] text-ink placeholder:text-ink-faint outline-none focus:border-wax transition-colors"
               />
             </div>
@@ -123,45 +120,6 @@ export default function EntrarCampanhaPage() {
           )}
         </div>
 
-        {/* Divisor com texto — separa os dois caminhos */}
-        <div className="flex items-center gap-4 my-8">
-          <div className="h-px bg-paper-line flex-1" />
-          <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-ink-faint">
-            ou
-          </span>
-          <div className="h-px bg-paper-line flex-1" />
-        </div>
-
-        {/* Bloco 2: buscar campanhas públicas */}
-        <div>
-          <h2 className="font-display text-lg font-semibold text-ink mb-1">
-            Buscar campanhas públicas
-          </h2>
-          <p className="font-body text-sm text-ink-soft mb-6">
-            Campanhas abertas à comunidade, sem precisar de convite.
-          </p>
-
-          <input
-            type="text"
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar por nome..."
-            className="w-full bg-transparent border-b border-paper-line pb-2 mb-6 font-body text-[15px] text-ink placeholder:text-ink-faint outline-none focus:border-wax transition-colors"
-          />
-
-          {resultadosFiltrados.length > 0 ? (
-            <div className="flex flex-col gap-4">
-              {resultadosFiltrados.map((campanha) => (
-                <CampanhaPublicaCard key={campanha.id} campanha={campanha} />
-              ))}
-            </div>
-          ) : (
-            <p className="font-body text-sm text-ink-faint text-center py-10">
-              Nenhuma campanha pública encontrada com esse nome.
-            </p>
-          )}
-        </div>
-
         <Link
           href="/campanhas"
           className="block w-fit mx-auto font-mono text-[11px] uppercase tracking-[0.08em] text-ink-faint hover:text-ink transition-colors mt-10"
@@ -170,27 +128,5 @@ export default function EntrarCampanhaPage() {
         </Link>
       </div>
     </main>
-  );
-}
-
-// Card de resultado de busca — mais horizontal que o do Feed,
-// porque aqui a ação principal é "Entrar", não navegar pra dentro.
-function CampanhaPublicaCard({ campanha }) {
-  return (
-    <div className="bg-sheet border border-paper-line p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-      <div className="flex-1">
-        <h3 className="font-display text-base font-semibold text-ink mb-2">
-          {campanha.titulo}
-        </h3>
-        <div className="flex flex-wrap gap-x-5 gap-y-1 font-mono text-[11px] text-ink-faint uppercase tracking-[0.04em]">
-          <span>mestre: <span className="text-ink-soft normal-case">{campanha.mestre}</span></span>
-          <span>{campanha.jogadores}/{campanha.maxJogadores} jogadores</span>
-          <span>{campanha.sistema}</span>
-        </div>
-      </div>
-      <button className="font-mono text-xs uppercase tracking-wide border border-ink text-ink px-5 py-2.5 hover:bg-ink hover:text-sheet transition-colors whitespace-nowrap">
-        Entrar
-      </button>
-    </div>
   );
 }
