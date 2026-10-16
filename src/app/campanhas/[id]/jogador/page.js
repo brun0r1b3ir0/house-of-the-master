@@ -1,6 +1,8 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { exigirCampanha } from "@/lib/campanha";
+import Mesa from "@/components/campanha/Mesa";
+import CardFichas from "@/components/campanha/CardFichas";
+import CardJogadores from "@/components/campanha/CardJogadores";
 
 export default async function JogadorPage({ params }) {
   const { id } = await params;
@@ -12,24 +14,12 @@ export default async function JogadorPage({ params }) {
   }
 
   return (
-    <main className="min-h-screen bg-paper px-6 py-10">
-      <div className="max-w-4xl mx-auto">
-        <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-wax mb-2">
-          Feed de jogador
-        </p>
-        <h1 className="font-display text-3xl font-semibold text-ink mb-2">
-          {campanha.titulo}
-        </h1>
-        <p className="font-body text-ink-soft mb-8">
-          Sistema: {campanha.sistema}
-        </p>
-        <Link
-          href="/campanhas"
-          className="font-mono text-[11px] uppercase tracking-[0.08em] text-ink-faint hover:text-ink transition-colors"
-        >
-          Voltar ao feed
-        </Link>
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:items-start">
+      <div className="lg:col-span-2">
+        <Mesa />
       </div>
-    </main>
+      <CardFichas eMestre={false} />
+      <CardJogadores campanha={campanha} eMestre={false} />
+    </div>
   );
 }

@@ -10,17 +10,29 @@
   --color-ink-faint: #8E8974;
   --color-wax: #7A2E27;
 
+  /* Tema War If (usado só dentro da campanha) */
+  --color-wi-ink: #121110;
+  --color-wi-paper: #EDEAE1;
+  --color-wi-steel: #74777A;
+  --color-wi-deep: #232322;
+  --color-wi-blood: #9C1E1E;
+  --color-wi-bone: #F2EFE6;
+  --color-wi-line: #C9C4B4;
+  --color-wi-accent: #B8302A;
+
   --font-display: var(--font-space-grotesk), sans-serif;
   --font-body: var(--font-source-serif), serif;
   --font-mono: var(--font-plex-mono), monospace;
+  --font-wi-display: var(--font-bebas), sans-serif;
+  --font-wi-body: var(--font-newsreader), serif;
 }
 
 body {
   background-color: var(--color-paper);
   background-image:
-    radial-gradient(allipse 900px 500px at 85% -10%, #ffffff40, transparent 60%),
+    radial-gradient(ellipse 900px 500px at 85% -10%, #ffffff40, transparent 60%),
     repeating-linear-gradient(180deg, transparent 0px, transparent 27px, var(--color-paper-line) 28px);
-    background-attachment: fixed;
-    color: var(--color-ink);
-    font-family: var(--font-body);
+  background-attachment: fixed;
+  color: var(--color-ink);
+  font-family: var(--font-body);
 }
