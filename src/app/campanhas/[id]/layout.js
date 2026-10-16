@@ -10,8 +10,8 @@ export default async function CampanhaLayout({ children, params }) {
   const painel = `/campanhas/${id}/${eMestre ? "mestre" : "jogador"}`;
 
   const itens = [
-    { rotulo: "Painel", href: painel, ativo: true },
-    { rotulo: eMestre ? "Fichas" : "Minhas fichas" },
+    { rotulo: "Painel", href: painel },
+    { rotulo: eMestre ? "Fichas" : "Minhas fichas", href: `/campanhas/${id}/fichas` },
     ...(eMestre ? [{ rotulo: "Jogadores" }] : []),
     { rotulo: "Anotações" },
     { rotulo: "Quadro" },
