@@ -55,8 +55,8 @@ export default function FormNovaFicha({ campanhaId, tipo }) {
         return;
       }
 
-      // Por enquanto volta para a lista; quando a página da ficha existir, vai direto para ela.
-      router.push(`/campanhas/${encodeURIComponent(campanhaId)}/fichas`);
+      const criada = await res.json();
+      router.push(`/campanhas/${encodeURIComponent(campanhaId)}/fichas/${criada.id}`);
       router.refresh();
     } catch {
       setErro("Não foi possível falar com o servidor. Tente de novo.");
