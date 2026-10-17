@@ -36,3 +36,9 @@ body {
   color: var(--color-ink);
   font-family: var(--font-body);
 }
+
+html[data-acento] {
+  color-scheme: dark;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ac-t) var(--color-wi-ink);
+}

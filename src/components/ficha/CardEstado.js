@@ -1,52 +1,104 @@
 import Card from "@/components/campanha/Card";
+import { formatarMetros } from "@/lib/ficha-visual";
+import { BotaoPasso, CampoNumero } from "./controles";
 
-function Barra({ rotulo, atual = 0, max }) {
-  return (
-    <div className="border border-wi-ink/25 p-2">
-      <div className="font-mono text-[10.5px] uppercase tracking-[0.07em] text-wi-steel">{rotulo}</div>
-      <div className="font-wi-display text-3xl leading-none">
-        {atual}
-        <span className="font-mono text-sm text-wi-steel"> / {max}</span>
-      </div>
-    </div>
-  );
-}
+const BARRAS = [
+  ["PV", "Pontos de Vida"],
+  ["PE", "Pontos de Esforço"],
+  ["PM", "Pontos de Magia"],
+  ["SAN", "Sanidade", "SA"],
+  ["SRT", "Sorte"],
+];
 
-function Info({ rotulo, children }) {
-  return (
-    <div className="flex items-baseline justify-between border-b border-wi-ink/15 py-1.5">
-      <span className="font-mono text-[10.5px] uppercase tracking-[0.07em] text-wi-steel">{rotulo}</span>
-      <span>{children}</span>
-    </div>
-  );
-}
-
-export default function CardEstado({ atuais = {}, derivados }) {
-  const d = derivados;
-  const sinal = d.modificadorDano ?? "";
+function Barra({ chave, sigla, nome, atual = 0, max = 0, editavel, alterar }) {
+  const pct = max > 0 ? Math.max(0, Math.min(100, (atual / max) * 100)) : 0;
+  // Nunca grava acima do máximo nem abaixo de zero.
+  const mudar = (novo) => alterar(`atuais.${chave}`, Math.min(max, Math.max(0, novo)));
 
   return (
-    <Card titulo="Estado atual">
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        <Barra rotulo="PV" atual={atuais.PV} max={d.PV} />
-        <Barra rotulo="PE" atual={atuais.PE} max={d.PE} />
-        <Barra rotulo="PM" atual={atuais.PM} max={d.PM} />
-        <Barra rotulo="SAN" atual={atuais.SAN} max={d.SAN} />
-        <Barra rotulo="SRT" atual={atuais.SRT} max={d.SRT} />
-      </div>
-
-      <div className="mt-3">
-        {d.corpoAtivo ? (
-          <>
-            <Info rotulo="Corpo (ativo)">{d.corpoAtivo.corpo} · dano {d.corpoAtivo.modificadorDano}</Info>
-            <Info rotulo="Corpo (passivo)">{d.corpoPassivo.corpo} · dano {d.corpoPassivo.modificadorDano}</Info>
-          </>
-        ) : (
-          <Info rotulo="Corpo">{d.Corpo} · dano {sinal}</Info>
+    <div className="border-b border-wi-line py-2">
+      <div className="flex items-center gap-1.5">
+        <span className="flex-1">
+          <b className="font-medium">{sigla}</b>{" "}
+          <small className="font-mono text-[10px] text-wi-steel">{nome}</small>
+        </span>
+        {editavel && (
+          <BotaoPasso rotulo={`Diminuir ${sigla}`} onClick={() => mudar(atual - 1)} desabilitado={atual <= 0}>
+            −
+          </BotaoPasso>
         )}
-        <Info rotulo="MOV">{d.MOV} · {d.distanciaMov}</Info>
-        <Info rotulo="Conhecimento">{d.Conhecimento}</Info>
+        <span className="flex min-w-[78px] items-center justify-center font-mono text-[13px]">
+          {editavel ? (
+            <CampoNumero
+              valor={atual}
+              min={0}
+              max={max}
+              rotulo={`${sigla} atual`}
+              onConfirmar={mudar}
+              className="w-10"
+            />
+          ) : (
+            atual
+          )}
+          <span className="ml-1 text-wi-steel">/ {max}</span>
+        </span>
+        {editavel && (
+          <BotaoPasso rotulo={`Aumentar ${sigla}`} onClick={() => mudar(atual + 1)} desabilitado={atual >= max}>
+            +
+          </BotaoPasso>
+        )}
       </div>
+      <div className="mt-1.5 h-[5px] bg-wi-line">
+        <div className="h-full bg-[var(--ac-p)]" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function Linha({ rotulo, detalhe, children }) {
+  return (
+    <div className="flex items-baseline justify-between border-b border-wi-line py-1.5 text-[15px]">
+      <span>
+        {rotulo} {detalhe && <small className="font-mono text-[10px] text-wi-steel">{detalhe}</small>}
+      </span>
+      <b className="font-mono text-sm font-medium text-[var(--ac-p)]">{children}</b>
+    </div>
+  );
+}
+
+export default function CardEstado({ atuais = {}, derivados: d, editavel, alterar }) {
+  return (
+    <Card titulo="Estado Atual">
+      {BARRAS.map(([chave, nome, sigla]) => (
+        <Barra
+          key={chave}
+          chave={chave}
+          sigla={sigla ?? chave}
+          nome={nome}
+          atual={atuais[chave]}
+          max={d[chave]}
+          editavel={editavel}
+          alterar={alterar}
+        />
+      ))}
+
+      {d.corpoAtivo ? (
+        <>
+          <Linha rotulo="Corpo Ativo" detalhe="(FOR+DES)">
+            {d.corpoAtivo.corpo} · {d.corpoAtivo.modificadorDano}
+          </Linha>
+          <Linha rotulo="Corpo Passivo" detalhe="(FOR+TAM)">
+            {d.corpoPassivo.corpo} · {d.corpoPassivo.modificadorDano}
+          </Linha>
+        </>
+      ) : (
+        <Linha rotulo="Corpo">
+          {d.Corpo} · {d.modificadorDano}
+        </Linha>
+      )}
+      <Linha rotulo="Movimento" detalhe="(MOV)">
+        {d.MOV} · {formatarMetros(d.distanciaMov)}
+      </Linha>
     </Card>
   );
 }
