@@ -115,10 +115,13 @@ describe("perda permanente de TAM", () => {
     [5, 50, 0, 5],
     [9, 50, 0, 5],
     [12, 50, 0, 10],
-    [100, 50, 0, 25], // teto = metade do TAM digitado
-    [0, 50, 10, 10], // nunca diminui sozinha
+    [100, 50, 0, 25], // teto = metade do TAM original
+    [0, 50, 10, 10], // nunca diminui sozinha (TAM 50 já com 10 tirados: original 60)
     [5, 50, 15, 15],
-  ])("fome %i, TAM %i, perda atual %i => %i", (fome, tam, atual, esperado) => {
+    [100, 25, 25, 25], // TAM digitado 25 + 25 já tirados = original 50: teto 25, nada novo
+    [100, 40, 10, 25], // original 50: ainda dá para tirar mais 15
+    [30, 40, 10, 25], // original 50: teto 25 limita os 30 pedidos pela fome
+  ])("fome %i, TAM digitado %i, perda aplicada %i => %i", (fome, tam, atual, esperado) => {
     expect(perdaPermanenteTamDesejada(fome, tam, atual)).toBe(esperado);
   });
 });
@@ -148,9 +151,9 @@ describe("pacoteCondicoesClassicas", () => {
     expect(per(p).INTERPESSOAL).toBe(-15); // só o estágio
   });
 
-  it("aplica a perda permanente de TAM", () => {
+  it("a perda permanente de TAM NÃO desconta do efetivo: ela já está no valor digitado", () => {
     const p = pacoteCondicoesClassicas({ perdaPermanenteTam: 5 });
-    expect(p.atributos.TAM.soma).toBe(-5);
+    expect(p.atributos.TAM.soma).toBe(0);
   });
 
   it("imune a Fome e Sede: ignora esses contadores e a perda de TAM, mas o resto vale", () => {

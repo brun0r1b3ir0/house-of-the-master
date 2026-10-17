@@ -20,9 +20,9 @@ export function valorInicialPericia(valorInicial, atributosDigitados) {
 }
 
 /**
- * Perícia "mágica" = a raça dá bônus nela. Não é guardada, é calculada.
+ *   Perícia "mágica" = a raça dá bônus nela. Não é guardada, é calculada.
  *   Caçador: todas as categorias (Primórdios, sem categoria, não conta)
- *   Vampiro: Físicas
+ *   Vampiro: Físicas E Combate.
  *   Lobisomem: Físicas, Combate e Lidar com Animais
  */
 export function periciaEhMagica(nome, categoria, raca) {
@@ -30,7 +30,7 @@ export function periciaEhMagica(nome, categoria, raca) {
     case "CACADOR":
       return CATEGORIAS.includes(categoria);
     case "VAMPIRO":
-      return categoria === "FISICA";
+      return categoria === "FISICA" || categoria === "COMBATE";
     case "LOBISOMEM":
       return categoria === "FISICA" || categoria === "COMBATE" || normalizarNome(nome) === "lidar com animais";
     default:

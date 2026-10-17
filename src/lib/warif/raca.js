@@ -42,7 +42,7 @@ export function pacoteRacaFixo(raca) {
       return pacote({
         atributos: { CON: 10 },
         fixos: { FOR: 120, DES: 120 },
-        pericias: { FISICA: 20 },
+        pericias: { FISICA: 20, COMBATE: 20 },
       });
     default:
       return pacoteVazio(); // Humano, Bruxo, Viajante, sem raça

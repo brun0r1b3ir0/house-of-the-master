@@ -58,11 +58,13 @@ describe("bônus fixos por raça", () => {
     expect(p.periciasPorNome["lidar com animais"]).toBe(20);
   });
 
-  it("Vampiro: FOR e DES fixas em 120, CON +10, Física +20", () => {
+  it("Vampiro: FOR e DES fixas em 120, CON +10, Física e Combate +20", () => {
     const p = pacoteRacaFixo("VAMPIRO");
     expect(p.fixos).toEqual({ FOR: 120, DES: 120 });
     expect(p.atributos.CON.soma).toBe(10);
     expect(per(p).FISICA).toBe(20);
+    expect(per(p).COMBATE).toBe(20);
+    expect(per(p).MENTAL).toBe(0);
   });
 });
 

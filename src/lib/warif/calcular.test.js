@@ -106,14 +106,15 @@ describe("calcularFicha: raças", () => {
     expect(pericia(r, "Ocultismo")).toMatchObject({ efetivo: 5, magica: false });
   });
 
-  it("Vampiro: Física +20; Sangria 4 e Verbena multiplicam o resultado", () => {
+  it("Vampiro: Física e Combate +20; Sangria 4 e Verbena multiplicam o resultado", () => {
     const base = calcularFicha(ficha({ raca: "VAMPIRO" }), sistema);
     expect(pericia(base, "Escalar").efetivo).toBe(40);
-    expect(pericia(base, "Lutar (Briga)").efetivo).toBe(25);
+    expect(pericia(base, "Lutar (Briga)")).toMatchObject({ efetivo: 45, magica: true });
+    expect(pericia(base, "Ocultismo")).toMatchObject({ efetivo: 5, magica: false });
 
     const sangue = calcularFicha(ficha({ raca: "VAMPIRO", estado: { contadores: { sangria: 4 } } }), sistema);
     expect(pericia(sangue, "Escalar").efetivo).toBe(30); // 40 x 3/4
-    expect(pericia(sangue, "Lutar (Briga)").efetivo).toBe(18); // floor(25 x 3/4)
+    expect(pericia(sangue, "Lutar (Briga)").efetivo).toBe(33); // floor(45 x 3/4) // floor(25 x 3/4)
 
     const verbena = calcularFicha(
       ficha({ raca: "VAMPIRO", estado: { contadores: { sangria: 4 }, flags: { verbena: true } } }),
@@ -145,16 +146,41 @@ describe("calcularFicha: sugestões de gravação", () => {
     expect(r.sugestoes.colapsoMagico).toBe(false);
   });
 
-  it("Fome: sugere gravar a perda permanente de TAM (12 PF => 10)", () => {
+  it("Fome: sugere tirar a perda do TAM digitado (12 PF => -10, TAM 50 => 40)", () => {
     const r = calcularFicha(ficha({ estado: { contadores: { fome: 12 } } }), sistema);
     expect(r.sugestoes.perdaPermanenteTam).toBe(10);
+    expect(r.sugestoes.tam).toBe(40);
+    expect(r.atributos.TAM).toBe(50); // o efetivo só muda depois que a tela grava o TAM
+  });
+
+  it("Fome: só tira a diferença do que já foi tirado", () => {
+    const e = { contadores: { fome: 15 }, perdaPermanenteTam: 10, atributos: { FOR: 50, CON: 50, TAM: 40, DES: 50, APA: 50, INT: 50, POD: 50, EDU: 50 } };
+    const r = calcularFicha(ficha({ estado: e }), sistema);
+    expect(r.sugestoes).toMatchObject({ perdaPermanenteTam: 15, tam: 35 });
+    expect(r.atributos.TAM).toBe(40);
+  });
+
+  it("Fome: respeita o teto de metade do TAM original", () => {
+    const e = { contadores: { fome: 100 }, perdaPermanenteTam: 20, atributos: { FOR: 50, CON: 50, TAM: 30, DES: 50, APA: 50, INT: 50, POD: 50, EDU: 50 } };
+    const r = calcularFicha(ficha({ estado: e }), sistema);
+    expect(r.sugestoes).toMatchObject({ perdaPermanenteTam: 25, tam: 25 });
+  });
+
+  it("depois de gravado, a fome parada não tira mais TAM", () => {
+    const e = { contadores: { fome: 12 }, perdaPermanenteTam: 10, atributos: { FOR: 50, CON: 50, TAM: 40, DES: 50, APA: 50, INT: 50, POD: 50, EDU: 50 } };
+    const r = calcularFicha(ficha({ estado: e }), sistema);
+    expect(r.sugestoes.perdaPermanenteTam).toBeUndefined();
+    expect(r.sugestoes.tam).toBeUndefined();
+  });
+
+  it("recuperar o TAM (subir o valor digitado) sobe o efetivo junto", () => {
+    const e = { contadores: { fome: 12 }, perdaPermanenteTam: 10, atributos: { FOR: 50, CON: 50, TAM: 50, DES: 50, APA: 50, INT: 50, POD: 50, EDU: 50 } };
+    expect(calcularFicha(ficha({ estado: e }), sistema).atributos.TAM).toBe(50);
   });
 
   it("não sugere nada se a perda gravada já é suficiente, nem para o Vampiro", () => {
     const a = calcularFicha(ficha({ estado: { contadores: { fome: 12 }, perdaPermanenteTam: 10 } }), sistema);
     expect(a.sugestoes.perdaPermanenteTam).toBeUndefined();
-    const b = calcularFicha(ficha({ raca: "VAMPIRO", estado: { contadores: { fome: 12 } } }), sistema);
-    expect(b.sugestoes.perdaPermanenteTam).toBeUndefined();
   });
 });
 

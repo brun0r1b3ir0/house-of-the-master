@@ -52,23 +52,30 @@ export function pacoteFrio(n) {
 
 /**
  * Perda permanente de TAM pela Fome: -5 a cada 5 PF, limitada à metade do TAM
- * digitado, e que NUNCA diminui sozinha. Devolve o valor que a ficha DEVERIA
- * ter; quem grava (PATCH) é a tela, só quando for maior que o atual.
- * Vampiro é imune (a raça decide, quem chama não usa esta função).
+ * ORIGINAL, e que NUNCA diminui sozinha.
+ *
+ * A perda é gravada no próprio valor digitado do TAM (a tela faz
+ * TAM = TAM - novaPerda), e não descontada do efetivo. Assim, se o jogador
+ * recuperar o TAM, o efetivo acompanha. `perdaAplicada` é só o contador do
+ * quanto já foi tirado, para não descontar duas vezes; o TAM original é o
+ * digitado de agora somado ao que já foi tirado.
+ *
+ * Devolve o total de perda que a ficha DEVERIA ter. Quem grava (PATCH) é a
+ * tela, só quando for maior que `perdaAplicada`. Vampiro é imune (a raça
+ * decide; quem chama não usa esta função).
  */
-export function perdaPermanenteTamDesejada(fome, tamDigitado, perdaAtual = 0) {
-  const teto = Math.floor((tamDigitado || 0) / 2);
+export function perdaPermanenteTamDesejada(fome, tamDigitado, perdaAplicada = 0) {
+  const aplicada = perdaAplicada || 0;
+  const tamOriginal = (tamDigitado || 0) + aplicada;
+  const teto = Math.floor(tamOriginal / 2);
   const desejada = Math.min(Math.floor((fome || 0) / 5) * 5, teto);
-  return Math.max(perdaAtual || 0, desejada);
-}
-
-export function pacotePerdaTam(perda) {
-  return pacote({ atributos: { TAM: -(perda || 0) } });
+  return Math.max(aplicada, desejada);
 }
 
 /**
  * Soma de tudo que vem do estado da ficha, sem a raça:
- * estágio de Sanidade + Exaustão + Fome + Sede + Debilitantes + Frio + perda de TAM.
+ * estágio de Sanidade + Exaustão + Fome + Sede + Debilitantes + Frio.
+ * (A perda permanente de TAM não entra aqui: já está no TAM digitado.)
  * @param {object} estado  `ficha.estado` da API
  * @param {{ imuneFomeSede?: boolean }} [opcoes]
  */
@@ -81,6 +88,5 @@ export function pacoteCondicoesClassicas(estado, { imuneFomeSede = false } = {})
     imuneFomeSede ? pacote() : pacoteSede(c.sede),
     pacoteDebilitantes(c.debilitantes),
     pacoteFrio(c.frio),
-    imuneFomeSede ? pacote() : pacotePerdaTam(estado?.perdaPermanenteTam),
   );
 }

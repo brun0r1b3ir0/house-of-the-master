@@ -51,9 +51,9 @@ describe("atributos efetivos: sem raça e Humano", () => {
     expect(atributosEfetivos(estadoBase({ contadores: { frio: 4 } }), null).CON).toBe(1);
   });
 
-  it("Fome com perda permanente de TAM reduz o TAM", () => {
+  it("o contador de perda de TAM não desconta do efetivo (a perda está no TAM digitado)", () => {
     const e = estadoBase({ contadores: { fome: 5 }, perdaPermanenteTam: 5 });
-    expect(atributosEfetivos(e, "HUMANO").TAM).toBe(45);
+    expect(atributosEfetivos(e, "HUMANO").TAM).toBe(50);
   });
 });
 

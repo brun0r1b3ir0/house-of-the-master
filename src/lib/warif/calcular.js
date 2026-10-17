@@ -50,12 +50,14 @@ export function calcularFicha(ficha, sistema) {
   const sugestoes = {};
   if (efeitos.colapso.mudou) sugestoes.colapsoMagico = efeitos.colapso.ativo;
   if (!efeitos.imuneFomeSede) {
-    const perda = perdaPermanenteTamDesejada(
-      estado.contadores?.fome,
-      estado.atributos?.TAM,
-      estado.perdaPermanenteTam,
-    );
-    if (perda > (estado.perdaPermanenteTam ?? 0)) sugestoes.perdaPermanenteTam = perda;
+    const tam = estado.atributos?.TAM ?? 0;
+    const aplicada = estado.perdaPermanenteTam ?? 0;
+    const desejada = perdaPermanenteTamDesejada(estado.contadores?.fome, tam, aplicada);
+    if (desejada > aplicada) {
+      // A perda vai para o valor digitado do TAM; o contador só registra quanto já foi tirado.
+      sugestoes.perdaPermanenteTam = desejada;
+      sugestoes.tam = Math.max(0, tam - (desejada - aplicada));
+    }
   }
 
   return {
