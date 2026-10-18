@@ -4,9 +4,12 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { acentoDaRaca } from "@/lib/ficha-visual";
 import AcentoDaPagina from "./AcentoDaPagina";
+import AbasFicha from "./AbasFicha";
+import ArquivarFicha from "./ArquivarFicha";
 import CabecalhoFicha from "./CabecalhoFicha";
 import CardAtributos from "./CardAtributos";
 import CardEstado from "./CardEstado";
+import CardEvolucao from "./CardEvolucao";
 import CardPericias from "./CardPericias";
 import CardCondicoes from "./CardCondicoes";
 import LayoutFicha from "./LayoutFicha";
@@ -48,22 +51,49 @@ export default function FichaEditavel({ campanhaId, fichaInicial, sistema, edita
           ← Fichas
         </Link>
         {editavel && (
-          <span
-            role="status"
-            aria-live="polite"
-            className={
-              "font-mono text-[10.5px] uppercase tracking-[0.07em] " +
-              (status === "erro" ? "text-wi-accent" : "text-wi-steel")
-            }
-          >
-            {TEXTO_STATUS[status]}
-          </span>
+          <div className="flex items-center gap-3">
+            <span
+              role="status"
+              aria-live="polite"
+              className={
+                "font-mono text-[10.5px] uppercase tracking-[0.07em] " +
+                (status === "erro" ? "text-wi-accent" : "text-wi-steel")
+              }
+            >
+              {TEXTO_STATUS[status]}
+            </span>
+            <ArquivarFicha
+              campanhaId={campanhaId}
+              fichaId={ficha.id}
+              nome={ficha.nome}
+              className="font-mono text-[10.5px] uppercase tracking-[0.07em] text-wi-steel hover:text-wi-accent"
+            />
+          </div>
         )}
       </div>
 
       {avisoMestre && (
         <div className="bg-wi-blood px-3 py-2 text-center font-mono text-[11px] uppercase tracking-[0.05em] text-wi-bone">
           Visão de Mestre · somente leitura · alterações devem ser combinadas com o jogador
+        </div>
+      )}
+
+      {editavel && ficha.estado.criacao && !ficha.estado.criacao.concluida && (
+        <div className="flex flex-wrap items-center justify-between gap-2 border border-wi-accent px-3 py-2 text-sm text-wi-bone">
+          <span>Criação não concluída: atributos e perícias ainda não foram distribuídos.</span>
+          <Link
+            href={`/campanhas/${campanhaId}/fichas/${ficha.id}/criar`}
+            className="border border-wi-bone px-2.5 py-1 font-mono text-[10.5px] uppercase tracking-[0.05em] hover:bg-wi-bone hover:text-wi-ink"
+          >
+            Continuar criação
+          </Link>
+          <ArquivarFicha
+            campanhaId={campanhaId}
+            fichaId={ficha.id}
+            nome={ficha.nome}
+            rotulo="Descartar"
+            className="border border-wi-steel px-2.5 py-1 font-mono text-[10.5px] uppercase tracking-[0.05em] text-wi-steel hover:border-wi-accent hover:text-wi-accent"
+          />
         </div>
       )}
 
@@ -79,6 +109,8 @@ export default function FichaEditavel({ campanhaId, fichaInicial, sistema, edita
           </button>
         </div>
       )}
+
+      <AbasFicha raca={ficha.raca} />
 
       <CabecalhoFicha ficha={ficha} editavel={editavel} alterar={alterar} />
 
@@ -110,6 +142,7 @@ export default function FichaEditavel({ campanhaId, fichaInicial, sistema, edita
               />
             </div>
             <CardPericias pericias={pericias} editavel={editavel} alterar={alterar} />
+            <CardEvolucao ficha={ficha} sistema={sistema} />
           </>
         }
         condicoes={

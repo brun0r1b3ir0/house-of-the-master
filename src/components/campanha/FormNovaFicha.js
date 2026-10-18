@@ -56,7 +56,9 @@ export default function FormNovaFicha({ campanhaId, tipo }) {
       }
 
       const criada = await res.json();
-      router.push(`/campanhas/${encodeURIComponent(campanhaId)}/fichas/${criada.id}`);
+      // PJ passa pelo assistente de criação (atributos, profissão...); NPC vai direto para a ficha.
+      const destino = `/campanhas/${encodeURIComponent(campanhaId)}/fichas/${criada.id}`;
+      router.push(tipo === "PJ" ? `${destino}/criar` : destino);
       router.refresh();
     } catch {
       setErro("Não foi possível falar com o servidor. Tente de novo.");

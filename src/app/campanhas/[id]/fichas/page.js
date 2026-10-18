@@ -3,6 +3,7 @@ import { exigirCampanha } from "@/lib/campanha";
 import { exigirDoBackend } from "@/lib/backend-servidor";
 import Card from "@/components/campanha/Card";
 import FichaItem from "@/components/campanha/FichaItem";
+import BotaoNovoPJ from "@/components/campanha/BotaoNovoPJ";
 
 const botao =
   "border border-wi-blood bg-wi-blood px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.05em] text-wi-bone transition-opacity hover:opacity-85";
@@ -24,10 +25,13 @@ export default async function FichasPage({ params }) {
   const eMestre = campanha.papel === "MESTRE";
   const fichas = await exigirDoBackend(`/campanhas/${encodeURIComponent(id)}/fichas`);
 
-  const nova = (
+  // Jogador: o botão já cria o PJ e abre o assistente. Mestre: formulário de NPC.
+  const nova = eMestre ? (
     <Link href={`/campanhas/${id}/fichas/nova`} className={botao}>
-      {eMestre ? "+ Ficha de NPC" : "+ Nova ficha"}
+      + Ficha de NPC
     </Link>
+  ) : (
+    <BotaoNovoPJ campanhaId={id} className={botao} />
   );
 
   if (!eMestre) {
