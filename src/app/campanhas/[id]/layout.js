@@ -25,7 +25,8 @@ export default async function CampanhaLayout({ children, params }) {
       : "";
 
   return (
-    <div className="flex min-h-screen flex-1 flex-col bg-wi-ink font-wi-body text-wi-bone">
+    // `fundo-campanha`: nas abas de raça da ficha, o globals.css pinta este fundo com o tom da raça.
+    <div className="fundo-campanha flex min-h-screen flex-1 flex-col bg-wi-ink font-wi-body text-wi-bone">
       <header className="sticky top-0 z-10 border-b border-wi-deep bg-wi-ink">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5">
           <span className="whitespace-nowrap font-wi-display text-[22px] tracking-wide">WAR IF</span>

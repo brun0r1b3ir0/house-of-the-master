@@ -10,6 +10,8 @@ function estaAtivo(pathname, href) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+// `aba-raca:` (variante do globals.css) clareia o menu quando a aba da raça da ficha está
+// aberta, porque o fundo tingido derruba o contraste do cinza normal.
 export default function MenuCampanha({ itens }) {
   const pathname = usePathname();
 
@@ -24,7 +26,7 @@ export default function MenuCampanha({ itens }) {
             <span
               key={item.rotulo}
               aria-disabled="true"
-              className={`${base} flex items-center justify-between gap-2 text-wi-steel opacity-45`}
+              className={`${base} flex items-center justify-between gap-2 text-wi-steel opacity-45 aba-raca:text-wi-ash aba-raca:opacity-100`}
             >
               {item.rotulo}
               <em className="border border-wi-deep px-1.5 py-px text-[9px] not-italic">em breve</em>
@@ -41,7 +43,7 @@ export default function MenuCampanha({ itens }) {
             className={`${base} border-b-2 md:-ml-px md:border-b-0 md:border-l-2 ${
               ativo
                 ? "border-wi-accent text-wi-bone"
-                : "border-transparent text-wi-steel hover:text-wi-bone"
+                : "border-transparent text-wi-steel hover:text-wi-bone aba-raca:text-wi-fog aba-raca:hover:text-wi-bone"
             }`}
           >
             {item.rotulo}

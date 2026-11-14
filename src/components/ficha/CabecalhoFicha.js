@@ -1,15 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RACAS, rotuloRaca } from "@/lib/fichas";
+import { acentoDaRaca } from "@/lib/ficha-visual";
 import { CampoTexto } from "./controles";
 
-const rotulo = "font-mono text-[10px] uppercase tracking-[0.08em] text-wi-steel";
+// `aba-raca:` (variante definida no globals.css) clareia o rótulo quando a aba da raça está aberta.
+const rotulo = "font-mono text-[10px] uppercase tracking-[0.08em] text-wi-steel aba-raca:text-wi-fog";
 const linha = "border-0 border-b border-wi-deep bg-transparent py-0.5 font-wi-body text-base text-wi-bone outline-none focus:border-[var(--ac-t)] placeholder:text-wi-steel";
 
-const seta =
-  "cursor-pointer appearance-none pr-6 bg-no-repeat bg-[length:10px_6px] bg-[position:right_2px_center] [&>option]:text-black " +
-  "bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%226%22 viewBox=%220 0 10 6%22><path d=%22M1 1l4 4 4-4%22 fill=%22none%22 stroke=%22%23F2EFE6%22 stroke-width=%221.5%22/></svg>')]";
+// Opções do seletor: "Sem raça" + as raças do sistema, cada uma com a sua cor.
+const SEM_RACA = { valor: "", rotulo: "Sem raça" };
+const OPCOES = [SEM_RACA, ...RACAS];
+
+function coresDa(valor) {
+  if (!valor) return { t: "#9A9DA0", p: "#232322" };
+  return acentoDaRaca(valor);
+}
 
 function Fixo({ rotuloCampo, valor }) {
   return (
@@ -22,8 +29,186 @@ function Fixo({ rotuloCampo, valor }) {
   );
 }
 
+// Quadradinho com a cor da raça (tom de painel por dentro, tom de texto na borda).
+function Marca({ valor }) {
+  const c = coresDa(valor);
+  return (
+    <span
+      aria-hidden="true"
+      className="inline-block h-2.5 w-2.5 shrink-0 border"
+      style={{ borderColor: c.t, backgroundColor: c.p }}
+    />
+  );
+}
+
+// Seletor de raça no tema War If, no lugar do <select> nativo (que não aceita estilo).
+// Teclado: ↑/↓ ou Enter/Espaço abrem; ↑/↓, Home e End navegam; Enter escolhe; Esc fecha.
+function SeletorRaca({ valor, onEscolher }) {
+  const [aberto, setAberto] = useState(false);
+  const [destaque, setDestaque] = useState(0);
+  const caixaRef = useRef(null);
+  const botaoRef = useRef(null);
+  const listaRef = useRef(null);
+
+  const indiceAtual = Math.max(0, OPCOES.findIndex((o) => o.valor === (valor ?? "")));
+  const atual = OPCOES[indiceAtual];
+
+  function abrir() {
+    setDestaque(indiceAtual);
+    setAberto(true);
+  }
+
+  function fechar(devolverFoco = true) {
+    setAberto(false);
+    if (devolverFoco) botaoRef.current?.focus();
+  }
+
+  function escolher(i) {
+    const opcao = OPCOES[i];
+    fechar();
+    if (opcao.valor !== (valor ?? "")) onEscolher(opcao.valor);
+  }
+
+  // Ao abrir, o foco vai para a lista (para as setas funcionarem).
+  useEffect(() => {
+    if (aberto) listaRef.current?.focus();
+  }, [aberto]);
+
+  // Clicar fora fecha.
+  useEffect(() => {
+    if (!aberto) return;
+    function aoClicarFora(e) {
+      if (!caixaRef.current?.contains(e.target)) setAberto(false);
+    }
+    document.addEventListener("mousedown", aoClicarFora);
+    return () => document.removeEventListener("mousedown", aoClicarFora);
+  }, [aberto]);
+
+  function teclaNoBotao(e) {
+    if (["ArrowDown", "ArrowUp", "Enter", " "].includes(e.key)) {
+      e.preventDefault();
+      abrir();
+    }
+  }
+
+  function teclaNaLista(e) {
+    const ultimo = OPCOES.length - 1;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setDestaque((i) => Math.min(ultimo, i + 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setDestaque((i) => Math.max(0, i - 1));
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      setDestaque(0);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      setDestaque(ultimo);
+    } else if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      escolher(destaque);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      fechar();
+    } else if (e.key === "Tab") {
+      fechar(false);
+    }
+  }
+
+  return (
+    <div ref={caixaRef} className="relative">
+      <button
+        ref={botaoRef}
+        type="button"
+        id="seletor-raca"
+        aria-haspopup="listbox"
+        aria-expanded={aberto}
+        aria-labelledby="rotulo-raca seletor-raca"
+        onClick={() => (aberto ? fechar() : abrir())}
+        onKeyDown={teclaNoBotao}
+        className={`${linha} flex w-full items-center gap-2 text-left ${aberto ? "border-[var(--ac-t)]" : ""}`}
+      >
+        <Marca valor={atual.valor} />
+        <span className={`flex-1 ${atual.valor ? "" : "text-wi-steel"}`}>{atual.rotulo}</span>
+        <svg
+          aria-hidden="true"
+          width="10"
+          height="6"
+          viewBox="0 0 10 6"
+          className={`shrink-0 transition-transform ${aberto ? "rotate-180" : ""}`}
+        >
+          <path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        </svg>
+      </button>
+
+      {aberto && (
+        <ul
+          ref={listaRef}
+          role="listbox"
+          tabIndex={-1}
+          aria-labelledby="rotulo-raca"
+          aria-activedescendant={`raca-opcao-${destaque}`}
+          onKeyDown={teclaNaLista}
+          className="absolute left-0 top-full z-40 mt-1 w-full min-w-[200px] border border-wi-deep border-t-2 border-t-[var(--ac-t)] bg-wi-ink py-1 outline-none"
+        >
+          {OPCOES.map((o, i) => {
+            const selecionada = i === indiceAtual;
+            const emDestaque = i === destaque;
+            return (
+              <li
+                key={o.valor || "sem-raca"}
+                id={`raca-opcao-${i}`}
+                role="option"
+                aria-selected={selecionada}
+                onMouseEnter={() => setDestaque(i)}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => escolher(i)}
+                className={
+                  "flex cursor-pointer items-center gap-2.5 px-3 py-2 font-wi-body text-[15px] " +
+                  (emDestaque ? "bg-wi-deep text-wi-bone" : o.valor ? "text-wi-fog" : "text-wi-ash")
+                }
+                style={emDestaque ? { boxShadow: `inset 2px 0 0 ${coresDa(o.valor).t}` } : undefined}
+              >
+                <Marca valor={o.valor} />
+                <span className="flex-1">{o.rotulo}</span>
+                {selecionada && (
+                  <span className="font-mono text-[9.5px] uppercase tracking-[0.08em] text-wi-ash">atual</span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// Raça permanente: vampiro não volta a ser outra coisa (o backend também recusa a troca).
+const RACA_PERMANENTE = "VAMPIRO";
+
+// Campo de raça travado, para quem já é vampiro.
+function RacaTravada({ valor }) {
+  return (
+    <div className="min-w-[150px]">
+      <div className={rotulo}>Raça</div>
+      <div className="flex items-center gap-2 border-b border-wi-deep py-0.5 font-wi-body text-base text-wi-bone">
+        <Marca valor={valor} />
+        <span className="flex-1">{rotuloRaca(valor)}</span>
+        <span
+          title="A transformação em vampiro é permanente"
+          className="font-mono text-[9.5px] uppercase tracking-[0.08em] text-wi-ash"
+        >
+          permanente
+        </span>
+      </div>
+    </div>
+  );
+}
+
 // Janela de confirmação da troca de raça. Esc ou clicar fora cancelam.
-function ConfirmarTrocaDeRaca({ de, para, aoConfirmar, aoCancelar }) {
+// `transformacao`: a escolha é Vampiro, então a janela avisa que não tem volta.
+function ConfirmarTrocaDeRaca({ de, para, transformacao, aoConfirmar, aoCancelar }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
@@ -38,15 +223,25 @@ function ConfirmarTrocaDeRaca({ de, para, aoConfirmar, aoCancelar }) {
         className="w-full max-w-md border border-black bg-wi-paper p-5 text-wi-ink"
       >
         <h2 id="titulo-troca-raca" className="font-wi-display text-[26px] font-normal tracking-wide">
-          Trocar de raça?
+          {transformacao ? "Transformar em vampiro?" : "Trocar de raça?"}
         </h2>
         <p className="mt-2 text-[15px]">
           O personagem deixa de ser <b>{de}</b> e passa a ser <b>{para}</b>.
         </p>
-        <p className="mt-2 text-sm text-wi-steel">
-          Os bônus e as regras da raça atual deixam de valer, e os da nova valem na hora. A perícia Olfato só
-          aparece para Lobisomem.
-        </p>
+        {transformacao ? (
+          <div role="alert" className="mt-3 border border-wi-blood bg-wi-blood/10 px-3 py-2 text-[14px]">
+            <b className="font-mono text-[11px] uppercase tracking-[0.05em] text-wi-blood">Não existe volta</b>
+            <p className="mt-1">
+              Ninguém deixa de ser vampiro. Depois de confirmar, {de === "sem raça" ? "este personagem" : `o ${de.toLowerCase()}`} que
+              você conhecia morre, e a raça desta ficha nunca mais poderá ser trocada.
+            </p>
+          </div>
+        ) : (
+          <p className="mt-2 text-sm text-wi-steel">
+            Os bônus e as regras da raça atual deixam de valer, e os da nova valem na hora. A perícia Olfato só
+            aparece para Lobisomem.
+          </p>
+        )}
         <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <button
             type="button"
@@ -61,7 +256,7 @@ function ConfirmarTrocaDeRaca({ de, para, aoConfirmar, aoCancelar }) {
             onClick={aoConfirmar}
             className="border border-wi-blood bg-wi-blood px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.05em] text-wi-bone transition-opacity hover:opacity-85"
           >
-            Trocar raça
+            {transformacao ? "Transformar em vampiro" : "Trocar raça"}
           </button>
         </div>
       </div>
@@ -70,7 +265,7 @@ function ConfirmarTrocaDeRaca({ de, para, aoConfirmar, aoCancelar }) {
 }
 
 export default function CabecalhoFicha({ ficha, editavel, alterar }) {
-  // Raça escolhida no select, esperando a confirmação (valor "" = sem raça).
+  // Raça escolhida no seletor, esperando a confirmação (valor "" = sem raça).
   const [pendente, setPendente] = useState(null);
 
   function confirmar() {
@@ -109,21 +304,17 @@ export default function CabecalhoFicha({ ficha, editavel, alterar }) {
                 className={`${linha} block w-full`}
               />
             </label>
-            <label className="block min-w-[150px]">
-              <span className={rotulo}>Raça</span>
-              <select
-                value={ficha.raca ?? ""}
-                onChange={(e) => setPendente(e.target.value)}
-                className={`${linha} ${seta} block w-full`}
-              >
-                <option value="">Sem raça</option>
-                {RACAS.map((r) => (
-                  <option key={r.valor} value={r.valor}>
-                    {r.rotulo}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {ficha.raca === RACA_PERMANENTE ? (
+              <RacaTravada valor={ficha.raca} />
+            ) : (
+              // div, não label: o seletor é um botão + lista, e o rótulo é ligado por aria-labelledby
+              <div className="block min-w-[150px]">
+                <span id="rotulo-raca" className={rotulo}>
+                  Raça
+                </span>
+                <SeletorRaca valor={ficha.raca} onEscolher={setPendente} />
+              </div>
+            )}
           </>
         ) : (
           <>
@@ -137,28 +328,11 @@ export default function CabecalhoFicha({ ficha, editavel, alterar }) {
         <ConfirmarTrocaDeRaca
           de={rotuloRaca(ficha.raca) || "sem raça"}
           para={rotuloRaca(pendente) || "sem raça"}
+          transformacao={pendente === RACA_PERMANENTE}
           aoConfirmar={confirmar}
           aoCancelar={() => setPendente(null)}
         />
       )}
-
-      <svg
-        className="absolute right-0 top-4 hidden text-[var(--ac-t)] opacity-90 sm:block"
-        width="104"
-        height="104"
-        viewBox="0 0 120 120"
-        fill="none"
-        aria-hidden="true"
-      >
-        <circle cx="60" cy="60" r="52" stroke="currentColor" strokeWidth="2" />
-        <circle cx="60" cy="60" r="44" stroke="currentColor" />
-        <text x="60" y="56" textAnchor="middle" fontFamily="monospace" fontSize="10" fill="currentColor" letterSpacing="2">
-          WAR IF
-        </text>
-        <text x="60" y="70" textAnchor="middle" fontFamily="monospace" fontSize="8" fill="currentColor" letterSpacing="3">
-          CLASSIFICADO
-        </text>
-      </svg>
     </header>
   );
 }

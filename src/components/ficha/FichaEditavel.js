@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { acentoDaRaca } from "@/lib/ficha-visual";
 import AcentoDaPagina from "./AcentoDaPagina";
-import AbasFicha from "./AbasFicha";
+import AbaVampirismo from "./AbaVampirismo";
+import AbasFicha, { NOMES_RACA, RACAS_COM_ABA } from "./AbasFicha";
 import ArquivarFicha from "./ArquivarFicha";
 import CabecalhoFicha from "./CabecalhoFicha";
 import CardAtributos from "./CardAtributos";
@@ -13,7 +14,11 @@ import CardEvolucao from "./CardEvolucao";
 import CardPericias from "./CardPericias";
 import CardCondicoes from "./CardCondicoes";
 import LayoutFicha from "./LayoutFicha";
+import TransicaoSangue from "./TransicaoSangue";
 import { useFichaAutosave } from "./useFichaAutosave";
+
+// Texto secundário da barra de cima: cinza normal, mais claro na aba da raça (fundo tingido).
+const textoSecundario = "font-mono text-[10.5px] uppercase tracking-[0.07em] text-wi-steel aba-raca:text-wi-fog";
 
 const TEXTO_STATUS = {
   salvo: "Salvo",
@@ -33,6 +38,35 @@ export default function FichaEditavel({ campanhaId, fichaInicial, sistema, edita
 
   const acento = acentoDaRaca(ficha.raca);
 
+  // Aba aberta. Se a raça mudar e a aba da raça deixar de existir, volta para a Ficha Geral.
+  const [aba, setAba] = useState("geral");
+  const abaAtual = aba === "raca" && RACAS_COM_ABA.includes(ficha.raca) ? "raca" : "geral";
+
+  // Transição de sangue ao entrar na aba da raça: { x, y } = ponto da tela onde ela nasce.
+  const [transicao, setTransicao] = useState(null);
+
+  function trocarAba(destino, evento) {
+    if (transicao) return; // ignora cliques enquanto o sangue ainda cobre a tela
+    if (destino !== "raca" || abaAtual === "raca") {
+      setAba(destino);
+      return;
+    }
+    const semMovimento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (semMovimento || !evento) {
+      setAba(destino);
+      return;
+    }
+    let x = evento.clientX;
+    let y = evento.clientY;
+    // Ativada pelo teclado (Enter/Espaço) não tem posição de mouse: usa o centro do botão.
+    if (!x && !y) {
+      const r = evento.currentTarget.getBoundingClientRect();
+      x = r.left + r.width / 2;
+      y = r.top + r.height / 2;
+    }
+    setTransicao({ x, y });
+  }
+
   // Olfato é exclusivo de Lobisomem: para as outras raças a perícia não aparece.
   const pericias = useMemo(
     () => calc.pericias.filter((p) => p.nome !== "Olfato" || ficha.raca === "LOBISOMEM"),
@@ -41,12 +75,21 @@ export default function FichaEditavel({ campanhaId, fichaInicial, sistema, edita
 
   return (
     <div className="grid gap-4" style={{ "--ac-t": acento.t, "--ac-p": acento.p }}>
-      <AcentoDaPagina t={acento.t} p={acento.p} />
+      <AcentoDaPagina t={acento.t} p={acento.p} abaNome={abaAtual === "raca" ? NOMES_RACA[ficha.raca] : null} />
+
+      {transicao && (
+        <TransicaoSangue
+          x={transicao.x}
+          y={transicao.y}
+          onCobrir={() => setAba("raca")}
+          onFim={() => setTransicao(null)}
+        />
+      )}
 
       <div className="flex items-center justify-between gap-3">
         <Link
           href={`/campanhas/${campanhaId}/fichas`}
-          className="font-mono text-[10.5px] uppercase tracking-[0.07em] text-wi-steel hover:text-wi-bone"
+          className={`${textoSecundario} hover:text-wi-bone aba-raca:hover:text-wi-bone`}
         >
           ← Fichas
         </Link>
@@ -56,8 +99,9 @@ export default function FichaEditavel({ campanhaId, fichaInicial, sistema, edita
               role="status"
               aria-live="polite"
               className={
-                "font-mono text-[10.5px] uppercase tracking-[0.07em] " +
-                (status === "erro" ? "text-wi-accent" : "text-wi-steel")
+                status === "erro"
+                  ? "font-mono text-[10.5px] uppercase tracking-[0.07em] text-wi-accent"
+                  : textoSecundario
               }
             >
               {TEXTO_STATUS[status]}
@@ -66,7 +110,7 @@ export default function FichaEditavel({ campanhaId, fichaInicial, sistema, edita
               campanhaId={campanhaId}
               fichaId={ficha.id}
               nome={ficha.nome}
-              className="font-mono text-[10.5px] uppercase tracking-[0.07em] text-wi-steel hover:text-wi-accent"
+              className={`${textoSecundario} hover:text-wi-accent aba-raca:hover:text-wi-accent`}
             />
           </div>
         )}
@@ -110,7 +154,7 @@ export default function FichaEditavel({ campanhaId, fichaInicial, sistema, edita
         </div>
       )}
 
-      <AbasFicha raca={ficha.raca} />
+      <AbasFicha raca={ficha.raca} ativa={abaAtual} onTrocar={trocarAba} />
 
       <CabecalhoFicha ficha={ficha} editavel={editavel} alterar={alterar} />
 
@@ -124,38 +168,42 @@ export default function FichaEditavel({ campanhaId, fichaInicial, sistema, edita
         </div>
       )}
 
-      <LayoutFicha
-        principal={
-          <>
-            <div className="grid gap-4 md:grid-cols-2">
-              <CardAtributos
-                base={ficha.estado.atributos}
-                efetivos={calc.atributos}
-                editavel={editavel}
-                alterar={alterar}
-              />
-              <CardEstado
-                atuais={ficha.estado.atuais}
-                derivados={calc.derivados}
-                editavel={editavel}
-                alterar={alterar}
-              />
-            </div>
-            <CardPericias pericias={pericias} editavel={editavel} alterar={alterar} />
-            <CardEvolucao ficha={ficha} sistema={sistema} />
-          </>
-        }
-        condicoes={
-          <CardCondicoes
-            estado={ficha.estado}
-            raca={ficha.raca}
-            estagios={sistema.estagiosSanidade}
-            colapsoAtivo={calc.colapso?.ativo ?? !!ficha.estado.flags?.colapsoMagico}
-            editavel={editavel}
-            alterar={alterar}
-          />
-        }
-      />
+      {abaAtual === "raca" ? (
+        <AbaVampirismo ficha={ficha} calc={calc} editavel={editavel} alterar={alterar} />
+      ) : (
+        <LayoutFicha
+          principal={
+            <>
+              <div className="grid gap-4 md:grid-cols-2">
+                <CardAtributos
+                  base={ficha.estado.atributos}
+                  efetivos={calc.atributos}
+                  editavel={editavel}
+                  alterar={alterar}
+                />
+                <CardEstado
+                  atuais={ficha.estado.atuais}
+                  derivados={calc.derivados}
+                  editavel={editavel}
+                  alterar={alterar}
+                />
+              </div>
+              <CardPericias pericias={pericias} editavel={editavel} alterar={alterar} />
+              <CardEvolucao ficha={ficha} sistema={sistema} />
+            </>
+          }
+          condicoes={
+            <CardCondicoes
+              estado={ficha.estado}
+              raca={ficha.raca}
+              estagios={sistema.estagiosSanidade}
+              colapsoAtivo={calc.colapso?.ativo ?? !!ficha.estado.flags?.colapsoMagico}
+              editavel={editavel}
+              alterar={alterar}
+            />
+          }
+        />
+      )}
     </div>
   );
 }
