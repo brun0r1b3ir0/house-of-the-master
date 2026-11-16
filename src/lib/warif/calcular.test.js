@@ -95,7 +95,7 @@ describe("calcularFicha: raças", () => {
     const r = calcularFicha(ficha({ raca: "CACADOR", ganhos: { Ocultismo: 20 } }), sistema);
     expect(pericia(r, "Ocultismo")).toMatchObject({ valor: 25, efetivo: 30, magica: true });
     expect(pericia(r, "Charme")).toMatchObject({ efetivo: 20, magica: true });
-    expect(pericia(r, "Primórdios")).toMatchObject({ efetivo: 0, magica: false });
+    expect(pericia(r, "Primórdios")).toMatchObject({ efetivo: 0, magica: true });
     expect(r.atributos).toMatchObject({ FOR: 55, DES: 55, POD: 55 });
   });
 
@@ -242,19 +242,19 @@ describe("calcularFicha: habilidades, Melhor do Mundo e classe", () => {
   const extras = (qtd, valor) =>
     Array.from({ length: qtd }, (_, i) => ({ nome: `Ofício ${i}`, categoria: "MENTAL", ganho: valor, ganhoTreino: 0, origem: "CUSTOM" }));
 
-  it("humano Perito: PE máximo 10 + 3", () => {
+  it("humano Perito: PE máximo 10 + 2", () => {
     const r = calcularFicha(ficha({ extras: extras(14, 60) }), sistema); // 15 perícias 50+, 29 EH
     expect(r.habilidades.periciasAcima50).toBe(15);
     expect(r.habilidades.eh.total).toBe(29);
     expect(r.habilidades.classe.chave).toBe("PERITO");
-    expect(r.derivados.PE).toBe(13);
+    expect(r.derivados.PE).toBe(12);
   });
 
-  it("humano Extraordinário: PE máximo 10 + 11 e perícias marcadas como Melhor do Mundo", () => {
+  it("humano Extraordinário: PE máximo 10 + 5 e perícias marcadas como Melhor do Mundo", () => {
     const r = calcularFicha(ficha({ extras: extras(17, 90) }), sistema);
     expect(r.habilidades.classe.chave).toBe("EXTRAORDINARIO");
     expect(r.habilidades.melhoresDoMundo).toHaveLength(17);
-    expect(r.derivados.PE).toBe(21);
+    expect(r.derivados.PE).toBe(15);
     expect(pericia(r, "Ofício 0")).toMatchObject({ melhorDoMundo: true, valor: 90, efetivo: 90 });
     expect(pericia(r, "Charme").melhorDoMundo).toBe(false);
   });
@@ -278,6 +278,13 @@ describe("calcularFicha: habilidades, Melhor do Mundo e classe", () => {
     expect(pericia(r, "Ofício 0").melhorDoMundo).toBe(true);
     expect(r.habilidades.classe).toBeNull();
     expect(r.habilidades.proxima).toBeNull();
+  });
+
+  it.each(["HUMANO", "CACADOR"])("%s com Primórdios base 90: mágica, sem EH e sem Melhor do Mundo", (raca) => {
+    const r = calcularFicha(ficha({ raca, ganhos: { Primórdios: 90 } }), sistema);
+    expect(pericia(r, "Primórdios")).toMatchObject({ valor: 90, magica: true, melhorDoMundo: false });
+    expect(r.habilidades.melhoresDoMundo).not.toContain("Primórdios");
+    expect(r.habilidades.eh.pericias).toBe(raca === "HUMANO" ? 1 : 0); // Humano: só a Língua Nativa (50)
   });
 
   it("lobisomem com a Alcateia inativa continua com Lidar com Animais mágica", () => {

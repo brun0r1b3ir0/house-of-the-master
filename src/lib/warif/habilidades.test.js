@@ -44,12 +44,13 @@ describe("perícia mágica (derivada dos bônus fixos da raça)", () => {
     expect(periciaEhMagica("Lidar com Animais", "MENTAL", "HUMANO")).toBe(false);
   });
 
-  it("Primórdios (sem categoria) segue a constante, hoje não mágica", () => {
-    expect(PRIMORDIOS_MAGICA).toBe(false);
-    for (const raca of ["CACADOR", "VAMPIRO", "LOBISOMEM", "HUMANO"]) {
-      expect(periciaEhMagica("Primórdios", "DESCONHECIDA", raca)).toBe(false);
-    }
-  });
+  it.each(["HUMANO", "CACADOR", "BRUXO", "VAMPIRO", "LOBISOMEM", "VIAJANTE", null])(
+    "Primórdios (sem categoria) é mágica para %s",
+    (raca) => {
+      expect(PRIMORDIOS_MAGICA).toBe(true);
+      expect(periciaEhMagica("Primórdios", "DESCONHECIDA", raca)).toBe(true);
+    },
+  );
 });
 
 describe("EH por perícia", () => {
@@ -100,6 +101,18 @@ describe("EH por perícia", () => {
 
   it("falhas e habilidades vazias por padrão", () => {
     expect(calcularEH([per("A", "MENTAL", 60)])).toEqual({ pericias: 2, falhas: 0, total: 2, ocupado: 0, livre: 2 });
+  });
+});
+
+describe("Primórdios: nunca dá EH nem é Melhor do Mundo", () => {
+  it.each(["HUMANO", "CACADOR"])("%s com Primórdios 90+", (raca) => {
+    const primordios = per("Primórdios", "DESCONHECIDA", 95, raca);
+    expect(primordios.magica).toBe(true);
+    expect(ehMelhorDoMundo(primordios)).toBe(false);
+    const r = calcularHabilidades([primordios], raca);
+    expect(r.eh.pericias).toBe(0);
+    expect(r.melhoresDoMundo).toEqual([]);
+    expect(r.periciasAcima50).toBe(0);
   });
 });
 
@@ -155,10 +168,12 @@ describe("classes humanas", () => {
     expect(CLASSES.map((x) => [x.chave, x.bonusPE, x.recuperacaoPE])).toEqual([
       ["HABILIDOSO", 0, "1 PE a cada 30 minutos"],
       ["PROFISSIONAL", 1, "3 PE por hora"],
-      ["PERITO", 3, "4 PE por hora"],
-      ["ESPECIALISTA", 6, "6 PE por hora"],
-      ["EXTRAORDINARIO", 11, "1 PE por turno"],
+      ["PERITO", 2, "4 PE por hora"],
+      ["ESPECIALISTA", 3, "6 PE por hora"],
+      ["EXTRAORDINARIO", 5, "1 PE por turno"],
     ]);
+    // o que cada classe acrescenta sobre a anterior
+    expect(CLASSES.map((x) => x.incrementoPE)).toEqual([0, 1, 1, 1, 2]);
   });
 
   it("Grau Único e ação bônus (só informação)", () => {

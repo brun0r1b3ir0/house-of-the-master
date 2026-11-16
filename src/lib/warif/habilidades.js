@@ -13,10 +13,10 @@ import { normalizarRaca, pacoteRacaFixo } from "./raca";
 // ---------------------------------------------------------------------------
 
 /**
- * Primórdios (categoria DESCONHECIDA) conta como mágica? A regra ainda está em aberto;
- * por enquanto NÃO. Mudar aqui muda EH, Melhor do Mundo e a coluna "Mágico" da ficha.
+ * Primórdios (categoria DESCONHECIDA) é mágica para TODAS as raças, inclusive Humano:
+ * nunca dá EH e nunca é Melhor do Mundo. Também aparece como "Mágico" na ficha.
  */
-export const PRIMORDIOS_MAGICA = false;
+export const PRIMORDIOS_MAGICA = true;
 
 /**
  * Perícia "mágica" = a raça dá bônus nela só por ser daquela raça.
@@ -26,8 +26,10 @@ export const PRIMORDIOS_MAGICA = false;
  *   Lobisomem -> Físicas, Combate e Lidar com Animais (o Olfato é Física)
  *   Caçador   -> Físicas, Combate, Mentais e Interpessoais
  *   Humano, Bruxo, Viajante -> nenhuma
+ *   Primórdios (sem categoria) -> mágica para qualquer raça (PRIMORDIOS_MAGICA)
  */
 export function periciaEhMagica(nome, categoria, raca) {
+  // Vale antes da raça: Primórdios é mágica para todas, mesmo as que não dão bônus nenhum.
   if (!CATEGORIAS.includes(categoria)) return PRIMORDIOS_MAGICA;
   const p = pacoteRacaFixo(normalizarRaca(raca));
   const cat = p.pericias[categoria];
@@ -82,8 +84,9 @@ export function ehMelhorDoMundo(pericia) {
 // ---------------------------------------------------------------------------
 
 // Recuperação de PE: SUBSTITUI a anterior (só informação: a ficha não tem relógio).
-// PE máximo: o bônus de cada classe ACUMULA com o das classes abaixo dela
-// (incrementoPE é o que a própria classe acrescenta; bonusPE é a soma até ela).
+// PE máximo: o bônus de cada classe ACUMULA com o das classes abaixo dela.
+// incrementoPE é o que a própria classe acrescenta (+1, +1, +1, +2);
+// bonusPE é o total até ela (Profissional +1, Perito +2, Especialista +3, Extraordinário +5).
 const TABELA = [
   {
     chave: "HABILIDOSO",
@@ -108,7 +111,7 @@ const TABELA = [
     nome: "Perito",
     requisitos: { melhorDoMundo: 0, periciasAcima50: 14, eh: 28 },
     recuperacaoPE: "4 PE por hora",
-    incrementoPE: 2,
+    incrementoPE: 1,
     grauUnico: false,
     acoesBonus: 0,
   },
@@ -117,7 +120,7 @@ const TABELA = [
     nome: "Especialista",
     requisitos: { melhorDoMundo: 1, periciasAcima50: 14, eh: 28 },
     recuperacaoPE: "6 PE por hora",
-    incrementoPE: 3,
+    incrementoPE: 1,
     grauUnico: true,
     acoesBonus: 0,
   },
@@ -126,13 +129,13 @@ const TABELA = [
     nome: "Extraordinário",
     requisitos: { melhorDoMundo: 2, periciasAcima50: 17, eh: 35 },
     recuperacaoPE: "1 PE por turno",
-    incrementoPE: 5,
+    incrementoPE: 2,
     grauUnico: true,
     acoesBonus: 1,
   },
 ];
 
-/** Classes em ordem crescente, com o bônus de PE máximo já acumulado (0, 0, 1, 3, 6, 11). */
+/** Classes em ordem crescente, com o bônus de PE máximo já acumulado (0, 0, 1, 2, 3, 5). */
 export const CLASSES = TABELA.reduce((lista, c) => {
   const anterior = lista.at(-1)?.bonusPE ?? 0;
   lista.push(Object.freeze({ ...c, bonusPE: anterior + c.incrementoPE }));

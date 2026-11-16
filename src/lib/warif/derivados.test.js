@@ -175,9 +175,9 @@ describe("PE máximo com o bônus da classe humana", () => {
   it.each([
     ["comum/Habilidoso", 0, 10],
     ["Profissional", 1, 11],
-    ["Perito", 3, 13],
-    ["Especialista", 6, 16],
-    ["Extraordinário", 11, 21],
+    ["Perito", 2, 12],
+    ["Especialista", 3, 13],
+    ["Extraordinário", 5, 15],
   ])("%s: +%i → PE %i", (_, bonus, pe) => {
     expect(comBonus(estadoBase(), bonus).PE).toBe(pe);
   });
@@ -187,6 +187,6 @@ describe("PE máximo com o bônus da classe humana", () => {
   });
 
   it("exceção manual de PE não recebe o bônus", () => {
-    expect(comBonus(estadoBase({ overrides: { PE: 7 } }), 11).PE).toBe(7);
+    expect(comBonus(estadoBase({ overrides: { PE: 7 } }), 5).PE).toBe(7);
   });
 });
