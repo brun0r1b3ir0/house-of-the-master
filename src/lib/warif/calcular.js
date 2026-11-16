@@ -12,6 +12,7 @@ import { calcularDerivados } from "./derivados";
 import { periciaEfetiva, periciaEhMagica, valorInicialPericia } from "./pericias";
 import { perdaPermanenteTamDesejada } from "./condicoes";
 import { normalizarRaca } from "./raca";
+import { calcularHabilidades, ehMelhorDoMundo } from "./habilidades";
 
 export function calcularFicha(ficha, sistema) {
   const estado = ficha?.estado ?? {};
@@ -19,8 +20,6 @@ export function calcularFicha(ficha, sistema) {
 
   const efeitos = calcularEfeitos(estado, raca);
   const atributos = atributosEfetivos(estado, raca, efeitos);
-  const derivados = calcularDerivados(estado, raca, efeitos, atributos);
-
   const catalogo = new Map((sistema?.pericias ?? []).map((p) => [p.nome, p]));
   const pericias = (ficha?.pericias ?? []).map((p) => {
     const cat = catalogo.get(p.nome);
@@ -46,6 +45,15 @@ export function calcularFicha(ficha, sistema) {
       magica: periciaEhMagica(p.nome, categoria, raca),
     };
   });
+  // Melhor do Mundo só marca a perícia (Privilegiado é informação para a tela); nenhum número muda.
+  for (const p of pericias) p.melhorDoMundo = ehMelhorDoMundo(p);
+
+  // EH, Melhor do Mundo e Classe humana. A classe dá bônus no PE máximo.
+  const habilidades = calcularHabilidades(pericias, raca, {
+    falhas: estado.falhas ?? [],
+    habilidades: estado.habilidades ?? [],
+  });
+  const derivados = calcularDerivados(estado, raca, efeitos, atributos, habilidades.beneficios?.bonusPE ?? 0);
 
   // O que a tela deve gravar (PATCH) porque o estado guardado ficou desatualizado.
   const sugestoes = {};
@@ -65,6 +73,7 @@ export function calcularFicha(ficha, sistema) {
     atributos,
     derivados,
     pericias,
+    habilidades,
     colapso: efeitos.colapso,
     mumificado: efeitos.multiplicadores.mumificado,
     linhagemNaoImplementada: efeitos.linhagemNaoImplementada,

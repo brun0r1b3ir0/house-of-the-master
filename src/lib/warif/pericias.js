@@ -5,7 +5,7 @@
 //
 // Perícia DESCONHECIDA (Primórdios) não recebe modificador de categoria.
 
-import { CATEGORIAS, normalizarNome } from "./modificadores";
+import { normalizarNome } from "./modificadores";
 import { ESQUIVA_VAMPIRO } from "./vampiro-fixos";
 
 /**
@@ -25,24 +25,8 @@ export function valorInicialPericia(valorInicial, atributosDigitados, raca) {
   return 0;
 }
 
-/**
- *   Perícia "mágica" = a raça dá bônus nela. Não é guardada, é calculada.
- *   Caçador: todas as categorias (Primórdios, sem categoria, não conta)
- *   Vampiro: Físicas E Combate.
- *   Lobisomem: Físicas, Combate e Lidar com Animais
- */
-export function periciaEhMagica(nome, categoria, raca) {
-  switch (raca) {
-    case "CACADOR":
-      return CATEGORIAS.includes(categoria);
-    case "VAMPIRO":
-      return categoria === "FISICA" || categoria === "COMBATE";
-    case "LOBISOMEM":
-      return categoria === "FISICA" || categoria === "COMBATE" || normalizarNome(nome) === "lidar com animais";
-    default:
-      return false;
-  }
-}
+// Perícia "mágica" (a raça dá bônus nela): derivada dos bônus fixos da raça, em habilidades.js.
+export { periciaEhMagica } from "./habilidades";
 
 /**
  * Valor efetivo de uma perícia.

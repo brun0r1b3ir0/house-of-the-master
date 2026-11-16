@@ -164,3 +164,29 @@ describe("derivados: Colapso Mágico", () => {
     expect(d.PM).toBe(20);
   });
 });
+
+describe("PE máximo com o bônus da classe humana", () => {
+  // INT 50 + CON 50 → PE 10
+  const comBonus = (estado, bonus) => {
+    const efeitos = calcularEfeitos(estado, "HUMANO");
+    return calcularDerivados(estado, "HUMANO", efeitos, atributosEfetivos(estado, "HUMANO", efeitos), bonus);
+  };
+
+  it.each([
+    ["comum/Habilidoso", 0, 10],
+    ["Profissional", 1, 11],
+    ["Perito", 3, 13],
+    ["Especialista", 6, 16],
+    ["Extraordinário", 11, 21],
+  ])("%s: +%i → PE %i", (_, bonus, pe) => {
+    expect(comBonus(estadoBase(), bonus).PE).toBe(pe);
+  });
+
+  it("sem o parâmetro, nada muda", () => {
+    expect(derivados(estadoBase(), "HUMANO").PE).toBe(10);
+  });
+
+  it("exceção manual de PE não recebe o bônus", () => {
+    expect(comBonus(estadoBase({ overrides: { PE: 7 } }), 11).PE).toBe(7);
+  });
+});

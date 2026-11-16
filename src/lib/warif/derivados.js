@@ -40,8 +40,9 @@ export function distanciaMov(mov) {
  * @param {string|null} raca
  * @param {object} efeitos      resultado de calcularEfeitos()
  * @param {object} efetivos     atributos efetivos
+ * @param {number} [bonusPE=0]  bônus de PE máximo da classe humana (acumulado); a exceção manual ignora
  */
-export function calcularDerivados(estado, raca, efeitos, efetivos) {
+export function calcularDerivados(estado, raca, efeitos, efetivos, bonusPE = 0) {
   const o = estado?.overrides ?? {};
   const { FOR, DES, TAM, CON, INT, POD, EDU } = efetivos;
 
@@ -49,7 +50,8 @@ export function calcularDerivados(estado, raca, efeitos, efetivos) {
   const pvBase = o.PV !== undefined ? o.PV : Math.floor((TAM + CON) / 10) || 1;
   const PV = Math.max(0, pvBase + efeitos.pacote.pvFlat);
 
-  const PE = o.PE !== undefined ? o.PE : Math.floor((INT + CON) / 10) || 1;
+  // PE: a exceção manual vence tudo, inclusive o bônus da classe humana
+  const PE = o.PE !== undefined ? o.PE : (Math.floor((INT + CON) / 10) || 1) + bonusPE;
   const PM = pmMaximo(POD, raca, o);
 
   // MOV: a exceção manual ignora raça, condições, Sangria e Verbena

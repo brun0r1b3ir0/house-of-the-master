@@ -9,4 +9,13 @@ export { calcularEfeitos, atributosEfetivos } from "./efeitos";
 export { calcularDerivados, corpoEDano, movAutomatico, distanciaMov } from "./derivados";
 export { periciaEfetiva, periciaEhMagica, valorInicialPericia, metade, quinto } from "./pericias";
 export { perdaPermanenteTamDesejada } from "./condicoes";
+export {
+  calcularHabilidades,
+  calcularEH,
+  classeHumana,
+  proximaClasse,
+  CLASSES,
+  HUMANO_COMUM,
+  PRIMORDIOS_MAGICA,
+} from "./habilidades";
 export { proximoColapso, normalizarRaca, RACA_PADRAO } from "./raca";

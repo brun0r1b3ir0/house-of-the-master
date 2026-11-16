@@ -236,3 +236,53 @@ describe("calcularFicha: raça nula vale como HUMANO", () => {
     expect(semRaca).toEqual(humano);
   });
 });
+
+describe("calcularFicha: habilidades, Melhor do Mundo e classe", () => {
+  // Perícias CUSTOM (inicial 0) com o ganho = valor base. A Língua Nativa (EDU 50) já conta como 1 perícia 50+.
+  const extras = (qtd, valor) =>
+    Array.from({ length: qtd }, (_, i) => ({ nome: `Ofício ${i}`, categoria: "MENTAL", ganho: valor, ganhoTreino: 0, origem: "CUSTOM" }));
+
+  it("humano Perito: PE máximo 10 + 3", () => {
+    const r = calcularFicha(ficha({ extras: extras(14, 60) }), sistema); // 15 perícias 50+, 29 EH
+    expect(r.habilidades.periciasAcima50).toBe(15);
+    expect(r.habilidades.eh.total).toBe(29);
+    expect(r.habilidades.classe.chave).toBe("PERITO");
+    expect(r.derivados.PE).toBe(13);
+  });
+
+  it("humano Extraordinário: PE máximo 10 + 11 e perícias marcadas como Melhor do Mundo", () => {
+    const r = calcularFicha(ficha({ extras: extras(17, 90) }), sistema);
+    expect(r.habilidades.classe.chave).toBe("EXTRAORDINARIO");
+    expect(r.habilidades.melhoresDoMundo).toHaveLength(17);
+    expect(r.derivados.PE).toBe(21);
+    expect(pericia(r, "Ofício 0")).toMatchObject({ melhorDoMundo: true, valor: 90, efetivo: 90 });
+    expect(pericia(r, "Charme").melhorDoMundo).toBe(false);
+  });
+
+  it("exceção manual de PE não muda com a classe", () => {
+    const r = calcularFicha(ficha({ extras: extras(17, 90), estado: { overrides: { PE: 7 } } }), sistema);
+    expect(r.habilidades.classe.chave).toBe("EXTRAORDINARIO");
+    expect(r.derivados.PE).toBe(7);
+  });
+
+  it("humano comum: PE sem bônus", () => {
+    const r = calcularFicha(ficha(), sistema);
+    expect(r.habilidades.classe.chave).toBe("COMUM");
+    expect(r.derivados.PE).toBe(10);
+  });
+
+  it("vampiro: Briga base 95 é mágica (sem EH, sem Melhor do Mundo); classe null e PE sem bônus", () => {
+    const r = calcularFicha(ficha({ raca: "VAMPIRO", ganhos: { "Lutar (Briga)": 70 }, extras: extras(17, 90) }), sistema);
+    const briga = pericia(r, "Lutar (Briga)");
+    expect(briga).toMatchObject({ valor: 95, magica: true, melhorDoMundo: false });
+    expect(pericia(r, "Ofício 0").melhorDoMundo).toBe(true);
+    expect(r.habilidades.classe).toBeNull();
+    expect(r.habilidades.proxima).toBeNull();
+  });
+
+  it("lobisomem com a Alcateia inativa continua com Lidar com Animais mágica", () => {
+    const r = calcularFicha(ficha({ raca: "LOBISOMEM", ganhos: { "Lidar com Animais": 85 } }), sistema);
+    expect(pericia(r, "Lidar com Animais")).toMatchObject({ valor: 90, magica: true, melhorDoMundo: false });
+    expect(r.habilidades.eh.pericias).toBe(1); // só a Língua Nativa (50)
+  });
+});
