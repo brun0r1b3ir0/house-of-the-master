@@ -45,10 +45,10 @@ describe("calcularEvolucao", () => {
     expect(e.pericias.find((p) => p.nome === "Briga")).toMatchObject({ criacao: 60, atual: 60, diff: 0 });
   });
 
-  it("mostra o que cresceu depois (ganho e treino) e perícias novas", () => {
+  it("mostra o que cresceu depois (ganho, com o treino dentro) e perícias novas", () => {
     const f = ficha();
-    f.pericias[0].ganho = 40; // Briga +5
-    f.pericias[0].ganhoTreino = 3; // +3 de treino
+    f.pericias[0].ganho = 43; // Briga +8, dos quais 3 vieram de treino
+    f.pericias[0].ganhoTreino = 3; // só registra a parte do ganho que veio de treino: não soma de novo
     f.pericias[3].ganho = 8; // Psicologia nova
     const e = calcularEvolucao(f, sistema);
     expect(e.pericias[0]).toMatchObject({ nome: "Briga", criacao: 60, atual: 68, diff: 8 });

@@ -38,7 +38,9 @@ export function calcularEvolucao(ficha, sistema) {
     const iniAntes = valorInicialPericia(cat?.valorInicial, snapshot.atributos, raca);
     const iniAgora = valorInicialPericia(cat?.valorInicial, atuais, raca);
     const antes = iniAntes + (daCriacao[p.nome] ?? 0);
-    const agora = iniAgora + (p.ganho ?? 0) + (p.ganhoTreino ?? 0);
+    // valor = inicial + ganho. O ganhoTreino é a parte do ganho que veio de treino
+    // (serve ao Desgaste); já está dentro do ganho, então não soma de novo.
+    const agora = iniAgora + (p.ganho ?? 0);
     // Só aparecem as perícias que receberam pontos na criação ou que mudaram depois.
     if (!daCriacao[p.nome] && agora === antes) continue;
     pericias.push({ nome: p.nome, categoria: cat?.categoria ?? p.categoria, criacao: antes, atual: agora, diff: agora - antes });
