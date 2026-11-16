@@ -107,8 +107,6 @@ export default function PassoProfissao({ profissao, onChange, atributos, catalog
           entre elas no passo seguinte.
         </p>
 
-        {!raca && <p className="text-sm text-wi-blood">Volte e escolha a raça para ver as perícias.</p>}
-
         {grupos.map(([nome, lista]) => (
           <fieldset key={nome} className="mb-3">
             <legend className="mb-1 font-mono text-[10.5px] uppercase tracking-[0.07em] text-wi-steel">{nome}</legend>

@@ -18,13 +18,19 @@ function estadoBase(extra = {}) {
 }
 const com = (base, extra) => ({ ...base, ...extra });
 
-describe("atributos efetivos: sem raça e Humano", () => {
+describe("atributos efetivos: Humano (e raça nula, que vale como Humano)", () => {
   it("ficha nova: efetivo = digitado", () => {
     for (const raca of [null, "HUMANO"]) {
       expect(atributosEfetivos(estadoBase(), raca)).toEqual({
         FOR: 50, CON: 50, TAM: 50, DES: 50, APA: 50, INT: 50, POD: 50, EDU: 50,
       });
     }
+  });
+
+  it.each([null, undefined, "", "  "])("raça %j dá os mesmos efeitos que HUMANO", (r) => {
+    const e = estadoBase({ estagioSanidade: "ALERTA_VERMELHO", contadores: { fome: 3, exaustao: 1 } });
+    expect(calcularEfeitos(e, r)).toEqual(calcularEfeitos(e, "HUMANO"));
+    expect(atributosEfetivos(e, r)).toEqual(atributosEfetivos(e, "HUMANO"));
   });
 
   it("condições clássicas somam (Estado Crítico + Exaustão 1)", () => {

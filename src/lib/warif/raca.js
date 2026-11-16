@@ -6,6 +6,15 @@
 
 import { ATRIBUTOS, pacote, pacoteVazio, somarPacotes } from "./modificadores";
 
+/** Não existe ficha sem raça: quem não é sobrenatural é Humano. */
+export const RACA_PADRAO = "HUMANO";
+
+/** Raça nula, vazia ou só com espaços (dados antigos) vale como HUMANO. */
+export function normalizarRaca(raca) {
+  const r = typeof raca === "string" ? raca.trim() : "";
+  return r || RACA_PADRAO;
+}
+
 export const ehConjurador = (raca) => raca === "BRUXO" || raca === "VIAJANTE";
 
 /** Vampiro é isento de Fome e Sede (e de Sono; o Frio continua valendo). */
@@ -45,7 +54,7 @@ export function pacoteRacaFixo(raca) {
         pericias: { FISICA: 20, COMBATE: 20 },
       });
     default:
-      return pacoteVazio(); // Humano, Bruxo, Viajante, sem raça
+      return pacoteVazio(); // Humano, Bruxo, Viajante
   }
 }
 

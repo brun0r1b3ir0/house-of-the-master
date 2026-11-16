@@ -128,7 +128,7 @@ export function periciaPermitida(nome, raca) {
   return !exigida || exigida === raca;
 }
 
-/** Catálogo filtrado pela raça: sem raça escolhida, nenhuma perícia exclusiva aparece. */
+/** Catálogo filtrado pela raça: perícias exclusivas (Olfato) só aparecem para a raça dona. */
 export function periciasDaRaca(catalogo, raca) {
   return (catalogo ?? []).filter((p) => periciaPermitida(p.nome, raca));
 }

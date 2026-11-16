@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { mensagemDeErro } from "@/lib/ficha-motor";
+import { normalizarRaca } from "@/lib/warif/raca";
 import {
   SEM_GANHOS,
   ajustarGanho,
@@ -35,7 +36,7 @@ const PASSOS = [
 export default function AssistenteCriacao({ ficha, campanhaId, sistema, voltarPara }) {
   const router = useRouter();
   const [passo, setPasso] = useState(0);
-  const inicial = { nome: ficha.nome ?? "", ocupacao: ficha.ocupacao ?? "", raca: ficha.raca ?? "" };
+  const inicial = { nome: ficha.nome ?? "", ocupacao: ficha.ocupacao ?? "", raca: normalizarRaca(ficha.raca) };
   const [identidade, setIdentidade] = useState(inicial);
   const [salva, setSalva] = useState(inicial); // o que o servidor já tem
   // Os atributos, a profissão e as perícias ficam só na memória até "Concluir criação".
@@ -76,7 +77,7 @@ export default function AssistenteCriacao({ ficha, campanhaId, sistema, voltarPa
     }
   }
 
-  const identidadeOk = identidade.nome.trim() !== "" && identidade.raca !== "";
+  const identidadeOk = identidade.nome.trim() !== "";
   const valido =
     passo === 0
       ? identidadeOk

@@ -35,7 +35,6 @@ export default function PassoIdentidade({ identidade, onChange }) {
         <label className="block">
           <span className={rotulo}>Raça</span>
           <select value={identidade.raca} onChange={(e) => mudar({ raca: e.target.value })} className={`${campo} ${seta}`}>
-            <option value="">Escolha a raça</option>
             {RACAS.map((r) => (
               <option key={r.valor} value={r.valor}>
                 {r.rotulo}

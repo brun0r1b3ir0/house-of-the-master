@@ -12,11 +12,28 @@ import {
   divisorPM,
   ehConjurador,
   imuneFomeSede,
+  normalizarRaca,
+  RACA_PADRAO,
 } from "./raca";
 import { pacoteVazio } from "./modificadores";
 
 const attrs = (p) => Object.fromEntries(Object.entries(p.atributos).map(([k, v]) => [k, v.soma]));
 const per = (p) => Object.fromEntries(Object.entries(p.pericias).map(([k, v]) => [k, v.soma]));
+
+describe("normalizarRaca", () => {
+  it.each([null, undefined, "", "   ", "\t"])("raça ausente (%j) vale como HUMANO", (r) => {
+    expect(normalizarRaca(r)).toBe("HUMANO");
+    expect(RACA_PADRAO).toBe("HUMANO");
+  });
+
+  it.each(["HUMANO", "CACADOR", "BRUXO", "VAMPIRO", "LOBISOMEM", "VIAJANTE"])("%s continua igual", (r) => {
+    expect(normalizarRaca(r)).toBe(r);
+  });
+
+  it("tira espaços em volta", () => {
+    expect(normalizarRaca(" VAMPIRO ")).toBe("VAMPIRO");
+  });
+});
 
 describe("helpers de raça", () => {
   it("conjuradores e imunidade", () => {
@@ -39,7 +56,7 @@ describe("helpers de raça", () => {
 });
 
 describe("bônus fixos por raça", () => {
-  it("Humano, Bruxo, Viajante e sem raça: nenhum bônus", () => {
+  it("Humano, Bruxo, Viajante (e raça nula, que vale como Humano): nenhum bônus", () => {
     for (const r of ["HUMANO", "BRUXO", "VIAJANTE", null, undefined]) {
       expect(pacoteRacaFixo(r)).toEqual(pacoteVazio());
     }

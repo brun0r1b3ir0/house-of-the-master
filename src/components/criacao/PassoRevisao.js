@@ -29,7 +29,7 @@ export default function PassoRevisao({ identidade, atributos, profissao, ganhos,
           <dt className="font-mono text-[10.5px] uppercase text-wi-steel">Ocupação</dt>
           <dd>{identidade.ocupacao || "—"}</dd>
           <dt className="font-mono text-[10.5px] uppercase text-wi-steel">Raça</dt>
-          <dd>{rotuloRaca(identidade.raca) ?? "—"}</dd>
+          <dd>{rotuloRaca(identidade.raca)}</dd>
         </dl>
       </Card>
 

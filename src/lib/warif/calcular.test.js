@@ -227,3 +227,12 @@ describe("calcularFicha: Esquivar do vampiro", () => {
     expect(pericia(calcularFicha(comDes("HUMANO", 120), sistema), "Esquivar").valorInicial).toBe(60);
   });
 });
+
+describe("calcularFicha: raça nula vale como HUMANO", () => {
+  it.each([null, undefined, ""])("ficha com raça %j calcula igual à de Humano", (r) => {
+    const estado = { contadores: { exaustao: 1, fome: 4, sede: 0, debilitantes: 0, frio: 0, sangria: 0 } };
+    const semRaca = calcularFicha({ ...ficha({ estado, ganhos: { Esquivar: 5 } }), raca: r }, sistema);
+    const humano = calcularFicha(ficha({ raca: "HUMANO", estado, ganhos: { Esquivar: 5 } }), sistema);
+    expect(semRaca).toEqual(humano);
+  });
+});

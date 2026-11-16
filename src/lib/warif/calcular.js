@@ -11,10 +11,11 @@ import { calcularEfeitos, atributosEfetivos } from "./efeitos";
 import { calcularDerivados } from "./derivados";
 import { periciaEfetiva, periciaEhMagica, valorInicialPericia } from "./pericias";
 import { perdaPermanenteTamDesejada } from "./condicoes";
+import { normalizarRaca } from "./raca";
 
 export function calcularFicha(ficha, sistema) {
   const estado = ficha?.estado ?? {};
-  const raca = ficha?.raca ?? null;
+  const raca = normalizarRaca(ficha?.raca);
 
   const efeitos = calcularEfeitos(estado, raca);
   const atributos = atributosEfetivos(estado, raca, efeitos);

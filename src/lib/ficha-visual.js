@@ -1,5 +1,9 @@
 // Cores de destaque por raça (vêm do mock da ficha).
+
+import { normalizarRaca } from "./warif/raca";
+
 // t = cor sobre fundo escuro (títulos), p = cor sobre o papel (números, botões marcados).
+// Humano (e raça nula, que vale como Humano) usa a cor padrão.
 const PADRAO = { t: "#D8D4C6", p: "#2A2A27" };
 
 const ACENTOS = {
@@ -11,7 +15,7 @@ const ACENTOS = {
 };
 
 export function acentoDaRaca(raca) {
-  return ACENTOS[raca] ?? PADRAO;
+  return ACENTOS[normalizarRaca(raca)] ?? PADRAO;
 }
 
 export const NOMES_ATRIBUTOS = {

@@ -3,20 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import { RACAS, rotuloRaca } from "@/lib/fichas";
 import { acentoDaRaca } from "@/lib/ficha-visual";
+import { normalizarRaca } from "@/lib/warif/raca";
 import { CampoTexto } from "./controles";
 
 // `aba-raca:` (variante definida no globals.css) clareia o rótulo quando a aba da raça está aberta.
 const rotulo = "font-mono text-[10px] uppercase tracking-[0.08em] text-wi-steel aba-raca:text-wi-fog";
 const linha = "border-0 border-b border-wi-deep bg-transparent py-0.5 font-wi-body text-base text-wi-bone outline-none focus:border-[var(--ac-t)] placeholder:text-wi-steel";
 
-// Opções do seletor: "Sem raça" + as raças do sistema, cada uma com a sua cor.
-const SEM_RACA = { valor: "", rotulo: "Sem raça" };
-const OPCOES = [SEM_RACA, ...RACAS];
-
-function coresDa(valor) {
-  if (!valor) return { t: "#9A9DA0", p: "#232322" };
-  return acentoDaRaca(valor);
-}
+// Opções do seletor: as raças do sistema, cada uma com a sua cor. Não existe "sem raça".
+const OPCOES = RACAS;
 
 function Fixo({ rotuloCampo, valor }) {
   return (
@@ -31,7 +26,7 @@ function Fixo({ rotuloCampo, valor }) {
 
 // Quadradinho com a cor da raça (tom de painel por dentro, tom de texto na borda).
 function Marca({ valor }) {
-  const c = coresDa(valor);
+  const c = acentoDaRaca(valor);
   return (
     <span
       aria-hidden="true"
@@ -50,7 +45,7 @@ function SeletorRaca({ valor, onEscolher }) {
   const botaoRef = useRef(null);
   const listaRef = useRef(null);
 
-  const indiceAtual = Math.max(0, OPCOES.findIndex((o) => o.valor === (valor ?? "")));
+  const indiceAtual = Math.max(0, OPCOES.findIndex((o) => o.valor === valor));
   const atual = OPCOES[indiceAtual];
 
   function abrir() {
@@ -66,7 +61,7 @@ function SeletorRaca({ valor, onEscolher }) {
   function escolher(i) {
     const opcao = OPCOES[i];
     fechar();
-    if (opcao.valor !== (valor ?? "")) onEscolher(opcao.valor);
+    if (opcao.valor !== valor) onEscolher(opcao.valor);
   }
 
   // Ao abrir, o foco vai para a lista (para as setas funcionarem).
@@ -130,7 +125,7 @@ function SeletorRaca({ valor, onEscolher }) {
         className={`${linha} flex w-full items-center gap-2 text-left ${aberto ? "border-[var(--ac-t)]" : ""}`}
       >
         <Marca valor={atual.valor} />
-        <span className={`flex-1 ${atual.valor ? "" : "text-wi-steel"}`}>{atual.rotulo}</span>
+        <span className="flex-1">{atual.rotulo}</span>
         <svg
           aria-hidden="true"
           width="10"
@@ -157,7 +152,7 @@ function SeletorRaca({ valor, onEscolher }) {
             const emDestaque = i === destaque;
             return (
               <li
-                key={o.valor || "sem-raca"}
+                key={o.valor}
                 id={`raca-opcao-${i}`}
                 role="option"
                 aria-selected={selecionada}
@@ -166,9 +161,9 @@ function SeletorRaca({ valor, onEscolher }) {
                 onClick={() => escolher(i)}
                 className={
                   "flex cursor-pointer items-center gap-2.5 px-3 py-2 font-wi-body text-[15px] " +
-                  (emDestaque ? "bg-wi-deep text-wi-bone" : o.valor ? "text-wi-fog" : "text-wi-ash")
+                  (emDestaque ? "bg-wi-deep text-wi-bone" : "text-wi-fog")
                 }
-                style={emDestaque ? { boxShadow: `inset 2px 0 0 ${coresDa(o.valor).t}` } : undefined}
+                style={emDestaque ? { boxShadow: `inset 2px 0 0 ${acentoDaRaca(o.valor).t}` } : undefined}
               >
                 <Marca valor={o.valor} />
                 <span className="flex-1">{o.rotulo}</span>
@@ -232,7 +227,7 @@ function ConfirmarTrocaDeRaca({ de, para, transformacao, aoConfirmar, aoCancelar
           <div role="alert" className="mt-3 border border-wi-blood bg-wi-blood/10 px-3 py-2 text-[14px]">
             <b className="font-mono text-[11px] uppercase tracking-[0.05em] text-wi-blood">Não existe volta</b>
             <p className="mt-1">
-              Ninguém deixa de ser vampiro. Depois de confirmar, {de === "sem raça" ? "este personagem" : `o ${de.toLowerCase()}`} que
+              Ninguém deixa de ser vampiro. Depois de confirmar, o {de.toLowerCase()} que
               você conhecia morre, e a raça desta ficha nunca mais poderá ser trocada.
             </p>
           </div>
@@ -265,11 +260,13 @@ function ConfirmarTrocaDeRaca({ de, para, transformacao, aoConfirmar, aoCancelar
 }
 
 export default function CabecalhoFicha({ ficha, editavel, alterar }) {
-  // Raça escolhida no seletor, esperando a confirmação (valor "" = sem raça).
+  // Raça nula (ficha antiga) vale como Humano.
+  const raca = normalizarRaca(ficha.raca);
+  // Raça escolhida no seletor, esperando a confirmação.
   const [pendente, setPendente] = useState(null);
 
   function confirmar() {
-    alterar("raca", pendente || null);
+    alterar("raca", pendente);
     setPendente(null);
   }
 
@@ -304,30 +301,30 @@ export default function CabecalhoFicha({ ficha, editavel, alterar }) {
                 className={`${linha} block w-full`}
               />
             </label>
-            {ficha.raca === RACA_PERMANENTE ? (
-              <RacaTravada valor={ficha.raca} />
+            {raca === RACA_PERMANENTE ? (
+              <RacaTravada valor={raca} />
             ) : (
               // div, não label: o seletor é um botão + lista, e o rótulo é ligado por aria-labelledby
               <div className="block min-w-[150px]">
                 <span id="rotulo-raca" className={rotulo}>
                   Raça
                 </span>
-                <SeletorRaca valor={ficha.raca} onEscolher={setPendente} />
+                <SeletorRaca valor={raca} onEscolher={setPendente} />
               </div>
             )}
           </>
         ) : (
           <>
             <Fixo rotuloCampo="Ocupação" valor={ficha.ocupacao} />
-            <Fixo rotuloCampo="Raça" valor={rotuloRaca(ficha.raca)} />
+            <Fixo rotuloCampo="Raça" valor={rotuloRaca(raca)} />
           </>
         )}
       </div>
 
       {pendente !== null && (
         <ConfirmarTrocaDeRaca
-          de={rotuloRaca(ficha.raca) || "sem raça"}
-          para={rotuloRaca(pendente) || "sem raça"}
+          de={rotuloRaca(raca)}
+          para={rotuloRaca(pendente)}
           transformacao={pendente === RACA_PERMANENTE}
           aoConfirmar={confirmar}
           aoCancelar={() => setPendente(null)}

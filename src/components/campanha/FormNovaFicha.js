@@ -18,7 +18,7 @@ export default function FormNovaFicha({ campanhaId, tipo }) {
   const router = useRouter();
   const [nome, setNome] = useState("");
   const [ocupacao, setOcupacao] = useState("");
-  const [raca, setRaca] = useState("");
+  const [raca, setRaca] = useState("HUMANO");
   const [erro, setErro] = useState("");
   const [enviando, setEnviando] = useState(false);
 
@@ -40,7 +40,7 @@ export default function FormNovaFicha({ campanhaId, tipo }) {
           tipo,
           nome: nome.trim(),
           ocupacao: ocupacao.trim() || undefined,
-          raca: raca || undefined,
+          raca,
         }),
       });
 
@@ -97,9 +97,8 @@ export default function FormNovaFicha({ campanhaId, tipo }) {
       </label>
 
       <label className="block">
-        <span className={rotulo}>Raça (opcional)</span>
+        <span className={rotulo}>Raça</span>
         <select value={raca} onChange={(e) => setRaca(e.target.value)} className={`${campo} ${seta}`}>
-          <option value="">Definir depois</option>
           {RACAS.map((r) => (
             <option key={r.valor} value={r.valor}>
               {r.rotulo}

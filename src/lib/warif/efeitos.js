@@ -3,7 +3,7 @@
 //   calcularEfeitos(estado, raca)   -> pacote total + multiplicadores + colapso
 //   atributosEfetivos(estado, raca) -> { FOR, CON, TAM, DES, APA, INT, POD, EDU }
 //
-// `estado` é o `ficha.estado` da API e `raca` é `ficha.raca` (ou null).
+// `estado` é o `ficha.estado` da API e `raca` é `ficha.raca` (nula vale como HUMANO).
 
 import { ATRIBUTOS, resolverAtributo, somarPacotes } from "./modificadores";
 import { pacoteCondicoesClassicas } from "./condicoes";
@@ -11,6 +11,7 @@ import {
   ehConjurador,
   imuneFomeSede,
   multiplicadoresRaca,
+  normalizarRaca,
   pacoteColapso,
   pacoteRaca,
   alvoColapso,
@@ -27,7 +28,8 @@ import {
  *   colapso: { ativo: boolean, alvo: number|null, pmMax: number|null, mudou: boolean },
  * }}
  */
-export function calcularEfeitos(estado, raca) {
+export function calcularEfeitos(estado, racaDaFicha) {
+  const raca = normalizarRaca(racaDaFicha);
   const imune = imuneFomeSede(raca);
   const condicoes = pacoteCondicoesClassicas(estado, { imuneFomeSede: imune });
   const racial = pacoteRaca(estado, raca);

@@ -4,6 +4,7 @@
 
 import { ATRIBUTOS } from "./modificadores";
 import { valorInicialPericia } from "./pericias";
+import { normalizarRaca } from "./raca";
 
 /**
  * @returns {null | {
@@ -29,12 +30,13 @@ export function calcularEvolucao(ficha, sistema) {
   for (const bolso of ["profissao", "interesse"])
     for (const [nome, v] of Object.entries(snapshot.ganhos?.[bolso] ?? {})) daCriacao[nome] = (daCriacao[nome] ?? 0) + v;
 
+  const raca = normalizarRaca(ficha.raca);
   const catalogo = new Map((sistema?.pericias ?? []).map((p) => [p.nome, p]));
   const pericias = [];
   for (const p of ficha.pericias ?? []) {
     const cat = catalogo.get(p.nome);
-    const iniAntes = valorInicialPericia(cat?.valorInicial, snapshot.atributos, ficha.raca);
-    const iniAgora = valorInicialPericia(cat?.valorInicial, atuais, ficha.raca);
+    const iniAntes = valorInicialPericia(cat?.valorInicial, snapshot.atributos, raca);
+    const iniAgora = valorInicialPericia(cat?.valorInicial, atuais, raca);
     const antes = iniAntes + (daCriacao[p.nome] ?? 0);
     const agora = iniAgora + (p.ganho ?? 0) + (p.ganhoTreino ?? 0);
     // Só aparecem as perícias que receberam pontos na criação ou que mudaram depois.
