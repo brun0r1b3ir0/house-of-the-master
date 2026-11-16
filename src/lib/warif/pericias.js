@@ -6,15 +6,21 @@
 // Perícia DESCONHECIDA (Primórdios) não recebe modificador de categoria.
 
 import { CATEGORIAS, normalizarNome } from "./modificadores";
+import { ESQUIVA_VAMPIRO } from "./vampiro-fixos";
 
 /**
  * Valor inicial de uma perícia do catálogo.
  * O catálogo traz um número ou uma fórmula que acompanha o atributo DIGITADO
  * (decisão 18): "DES_METADE" (Esquivar) e "EDU" (Língua Nativa).
+ * Exceção: para o VAMPIRO a Esquivar começa sempre em ESQUIVA_VAMPIRO (60),
+ * sem depender da DES (que vai subir com a idade).
  */
-export function valorInicialPericia(valorInicial, atributosDigitados) {
+export function valorInicialPericia(valorInicial, atributosDigitados, raca) {
   if (typeof valorInicial === "number") return valorInicial;
-  if (valorInicial === "DES_METADE") return Math.floor((atributosDigitados?.DES ?? 0) / 2);
+  if (valorInicial === "DES_METADE") {
+    if (raca === "VAMPIRO") return ESQUIVA_VAMPIRO;
+    return Math.floor((atributosDigitados?.DES ?? 0) / 2);
+  }
   if (valorInicial === "EDU") return atributosDigitados?.EDU ?? 0;
   return 0;
 }

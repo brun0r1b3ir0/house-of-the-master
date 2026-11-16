@@ -178,6 +178,7 @@ export default function FichaEditavel({ campanhaId, fichaInicial, sistema, edita
                 <CardAtributos
                   base={ficha.estado.atributos}
                   efetivos={calc.atributos}
+                  raca={ficha.raca}
                   editavel={editavel}
                   alterar={alterar}
                 />

@@ -25,7 +25,7 @@ export function calcularFicha(ficha, sistema) {
     const cat = catalogo.get(p.nome);
     const categoria = cat?.categoria ?? p.categoria;
     const exigePrecisao = cat?.exigePrecisao ?? false;
-    const valorInicial = cat ? valorInicialPericia(cat.valorInicial, estado.atributos) : 0;
+    const valorInicial = cat ? valorInicialPericia(cat.valorInicial, estado.atributos, raca) : 0;
     const ganho = p.ganho ?? 0;
     const valor = valorInicial + ganho;
     return {

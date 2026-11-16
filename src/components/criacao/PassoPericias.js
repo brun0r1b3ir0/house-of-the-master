@@ -69,7 +69,7 @@ export default function PassoPericias({ ganhos, onChange, ctx }) {
     ["Outras", filtradas.filter((p) => !CATEGORIAS.some(([c]) => c === p.categoria))],
   ].filter(([, lista]) => lista.length > 0);
 
-  const inicialDe = (p) => valorInicialPericia(p.valorInicial, ctx.attrs);
+  const inicialDe = (p) => valorInicialPericia(p.valorInicial, ctx.attrs, ctx.raca);
   const linha = (p, bolso) => (
     <Linha
       key={`${bolso}-${p.nome}`}

@@ -7,6 +7,7 @@ import { mensagemDeErro } from "@/lib/ficha-motor";
 import {
   SEM_GANHOS,
   ajustarGanho,
+  atributosAoTrocarRaca,
   atributosIniciais,
   montarEnvio,
   normalizarGanhos,
@@ -38,7 +39,7 @@ export default function AssistenteCriacao({ ficha, campanhaId, sistema, voltarPa
   const [identidade, setIdentidade] = useState(inicial);
   const [salva, setSalva] = useState(inicial); // o que o servidor já tem
   // Os atributos, a profissão e as perícias ficam só na memória até "Concluir criação".
-  const [atributos, setAtributos] = useState(atributosIniciais);
+  const [atributos, setAtributos] = useState(() => atributosIniciais(inicial.raca));
   const [profissao, setProfissao] = useState({ principal: "", secundario: "", pericias: [] });
   const [ganhosBrutos, setGanhosBrutos] = useState(SEM_GANHOS);
   const [salvando, setSalvando] = useState(false);
@@ -68,7 +69,9 @@ export default function AssistenteCriacao({ ficha, campanhaId, sistema, voltarPa
   function mudarIdentidade(nova) {
     setIdentidade(nova);
     // Trocou de raça: perícias que ela não permite (Olfato) saem da profissão.
+    // Os atributos só reiniciam se o tipo de distribuição mudar (entrar/sair de Vampiro).
     if (nova.raca !== identidade.raca) {
+      setAtributos((a) => atributosAoTrocarRaca(a, identidade.raca, nova.raca));
       setProfissao((p) => ({ ...p, pericias: p.pericias.filter((n) => periciaPermitida(n, nova.raca)) }));
     }
   }
@@ -78,7 +81,7 @@ export default function AssistenteCriacao({ ficha, campanhaId, sistema, voltarPa
     passo === 0
       ? identidadeOk
       : passo === 1
-        ? validarAtributos(atributos).ok
+        ? validarAtributos(atributos, identidade.raca).ok
         : passo === 2
           ? validarProfissao(profissao, periciasDaRaca(catalogo, identidade.raca), identidade.raca).ok
           : passo === 3
@@ -128,7 +131,7 @@ export default function AssistenteCriacao({ ficha, campanhaId, sistema, voltarPa
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(montarEnvio({ atributos, profissao, ganhos })),
+          body: JSON.stringify(montarEnvio({ atributos, profissao, ganhos, raca: identidade.raca })),
         },
       );
       if (res.status === 401) {
@@ -177,7 +180,7 @@ export default function AssistenteCriacao({ ficha, campanhaId, sistema, voltarPa
       </ol>
 
       {passo === 0 && <PassoIdentidade identidade={identidade} onChange={mudarIdentidade} />}
-      {passo === 1 && <PassoAtributos atributos={atributos} onChange={setAtributos} />}
+      {passo === 1 && <PassoAtributos atributos={atributos} onChange={setAtributos} raca={identidade.raca} />}
       {passo === 2 && (
         <PassoProfissao
           profissao={profissao}

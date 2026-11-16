@@ -22,7 +22,13 @@ import {
   validarPericias,
   ganhosParaEnvio,
   montarEnvio,
+  regrasAtributos,
+  atributoFixo,
+  atributosAoTrocarRaca,
+  valorParaProfissao,
+  iniciaisPermitidas,
 } from "./criacao";
+import { FOR_DES_VAMPIRO_ORCAMENTO, TOTAL_ATRIBUTOS_VAMPIRO } from "./vampiro-fixos";
 
 describe("criação: atributos", () => {
   it("começa com 15 em tudo e 340 pontos sobrando", () => {
@@ -333,5 +339,121 @@ describe("criação: corpo do envio", () => {
     expect(Object.keys(corpo.atributos)).toHaveLength(8);
     expect(corpo.profissao).toEqual({ principal: "DES", secundario: "EDU", pericias: ["A", "B"] });
     expect(corpo.ganhos).toEqual({ profissao: { A: 10 }, interesse: { B: 5 } });
+  });
+});
+describe("criação: vampiro", () => {
+  const V = "VAMPIRO";
+  // Seis livres somando 345: 60 + 60 + 60 + 60 + 60 + 45.
+  const completo = { FOR: 120, DES: 120, CON: 60, TAM: 60, APA: 60, INT: 60, POD: 60, EDU: 45 };
+
+  it("FOR/DES fixos em 120 e seis livres somando 345", () => {
+    expect(TOTAL_ATRIBUTOS_VAMPIRO).toBe(345);
+    const r = regrasAtributos(V);
+    expect(r.fixos).toEqual({ FOR: 120, DES: 120 });
+    expect([...r.livres].sort()).toEqual(["APA", "CON", "EDU", "INT", "POD", "TAM"]);
+    expect(r.total).toBe(345);
+    expect(atributoFixo(V, "FOR")).toBe(true);
+    expect(atributoFixo(V, "CON")).toBe(false);
+    expect(atributoFixo("HUMANO", "FOR")).toBe(false);
+  });
+
+  it("começa com FOR/DES 120, o resto em 15 e 255 pontos a distribuir", () => {
+    const a = atributosIniciais(V);
+    expect(a.FOR).toBe(120);
+    expect(a.DES).toBe(120);
+    for (const k of ["CON", "TAM", "APA", "INT", "POD", "EDU"]) expect(a[k]).toBe(15);
+    expect(somaAtributos(a, V)).toBe(90);
+    expect(pontosRestantes(a, V)).toBe(255);
+  });
+
+  it("FOR e DES não podem ser alterados", () => {
+    const a = atributosIniciais(V);
+    expect(ajustarAtributo(a, "FOR", 50, V)).toBe(a);
+    expect(ajustarAtributo(a, "DES", 150, V)).toBe(a);
+    expect(maximoAtual(a, "FOR", V)).toBe(120);
+  });
+
+  it("livres continuam entre 15 e 90", () => {
+    const a = atributosIniciais(V);
+    expect(ajustarAtributo(a, "CON", 200, V).CON).toBe(90);
+    expect(ajustarAtributo(a, "CON", 1, V)).toBe(a);
+  });
+
+  it("não deixa passar de 345 nos seis livres", () => {
+    let a = atributosIniciais(V);
+    for (const k of ["CON", "TAM", "APA", "INT"]) a = ajustarAtributo(a, k, 90, V); // 360 + 30 → passa
+    expect(somaAtributos(a, V)).toBe(345);
+    expect(pontosRestantes(a, V)).toBe(0);
+  });
+
+  it("exige exatamente 345 nos seis atributos", () => {
+    expect(validarAtributos(completo, V)).toMatchObject({ ok: true, restante: 0 });
+    expect(validarAtributos({ ...completo, EDU: 44 }, V)).toMatchObject({ ok: false, restante: 1 });
+    expect(validarAtributos({ ...completo, EDU: 46 }, V)).toMatchObject({ ok: false, restante: -1 });
+  });
+
+  it("a mesma distribuição não vale para outras raças (lá são 460 nos oito)", () => {
+    expect(validarAtributos(completo, "HUMANO").ok).toBe(false);
+    expect(validarAtributos(completo).ok).toBe(false);
+  });
+
+  it("recusa FOR/DES diferentes de 120 e livres fora de 15–90", () => {
+    const r = validarAtributos({ ...completo, FOR: 90 }, V);
+    expect(r.ok).toBe(false);
+    expect(r.erros.join(" ")).toMatch(/FOR é fixo em 120/);
+    expect(validarAtributos({ ...completo, CON: 95, EDU: 10 }, V).ok).toBe(false);
+  });
+
+  it("FOR/DES contam 57,5 no orçamento de profissão", () => {
+    expect(FOR_DES_VAMPIRO_ORCAMENTO).toBe(57.5);
+    expect(valorParaProfissao(completo, "FOR", V)).toBe(57.5);
+    expect(valorParaProfissao(completo, "EDU", V)).toBe(45);
+    expect(valorParaProfissao(completo, "FOR", "HUMANO")).toBe(120);
+    // 57,5 × 2 + EDU 45 × 2 = 115 + 90
+    expect(pontosProfissao(completo, "FOR", "EDU", V)).toBe(205);
+    expect(pontosProfissao(completo, "DES", "INT", V)).toBe(235);
+    // APA não é fixo: segue o valor digitado
+    expect(pontosProfissao(completo, "APA", "EDU", V)).toBe(210);
+    // sem a raça, conta o 120 digitado
+    expect(pontosProfissao(completo, "FOR", "EDU")).toBe(330);
+    expect(orcamentos(completo, "DES", "EDU", V)).toEqual({ profissao: 205, interesse: 120 });
+  });
+
+  it("Esquivar do vampiro começa em 60 na criação, a do humano em DES / 2", () => {
+    const cat = [{ nome: "Esquivar", categoria: "COMBATE", valorInicial: "DES_METADE" }];
+    expect(iniciaisPermitidas(cat, V, completo).get("Esquivar")).toBe(60);
+    expect(iniciaisPermitidas(cat, V, { ...completo, DES: 300 }).get("Esquivar")).toBe(60);
+    expect(iniciaisPermitidas(cat, "HUMANO", { DES: 70 }).get("Esquivar")).toBe(35);
+  });
+
+  it("envio do vampiro leva FOR e DES = 120", () => {
+    const corpo = montarEnvio({
+      atributos: { ...completo, FOR: 15, DES: undefined },
+      profissao: { principal: "FOR", secundario: "EDU", pericias: [] },
+      ganhos: SEM_GANHOS,
+      raca: V,
+    });
+    expect(corpo.atributos).toEqual(completo);
+  });
+
+  describe("troca de raça", () => {
+    const humano = { FOR: 90, CON: 60, TAM: 60, DES: 50, APA: 50, INT: 50, POD: 50, EDU: 50 };
+
+    it("entre raças comuns mantém o que foi distribuído", () => {
+      expect(atributosAoTrocarRaca(humano, "HUMANO", "LOBISOMEM")).toBe(humano);
+      expect(atributosAoTrocarRaca(humano, "", "BRUXO")).toBe(humano);
+    });
+
+    it("entrar em VAMPIRO reinicia na distribuição do vampiro", () => {
+      expect(atributosAoTrocarRaca(humano, "HUMANO", V)).toEqual(atributosIniciais(V));
+    });
+
+    it("sair de VAMPIRO reinicia na distribuição comum", () => {
+      expect(atributosAoTrocarRaca(completo, V, "CACADOR")).toEqual(atributosIniciais());
+    });
+
+    it("vampiro para vampiro não muda nada", () => {
+      expect(atributosAoTrocarRaca(completo, V, V)).toBe(completo);
+    });
   });
 });

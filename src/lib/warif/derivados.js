@@ -2,8 +2,7 @@
 // Todos usam os atributos EFETIVOS (já com condições e raça).
 
 import { pmMaximo } from "./raca";
-
-const MOV_VAMPIRO = 12;
+import { MOV_VAMPIRO } from "./vampiro-fixos";
 
 /** Corpo e bônus de dano a partir de FOR + TAM (ou FOR + DES, no Corpo Ativo do Vampiro). */
 export function corpoEDano(soma) {

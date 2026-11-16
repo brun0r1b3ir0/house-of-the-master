@@ -207,3 +207,23 @@ describe("calcularFicha: casos de borda", () => {
     expect(r.linhagemNaoImplementada).toBe(true);
   });
 });
+
+describe("calcularFicha: Esquivar do vampiro", () => {
+  const comDes = (raca, DES) =>
+    ficha({
+      raca,
+      estado: { atributos: { FOR: 120, CON: 50, TAM: 50, DES, APA: 50, INT: 50, POD: 50, EDU: 50 } },
+      ganhos: { Esquivar: 5 },
+    });
+
+  it.each([50, 120, 200])("valor inicial é 60 com DES digitada %i", (des) => {
+    const e = pericia(calcularFicha(comDes("VAMPIRO", des), sistema), "Esquivar");
+    expect(e.valorInicial).toBe(60);
+    expect(e.valor).toBe(65);
+  });
+
+  it("humano continua com DES / 2", () => {
+    expect(pericia(calcularFicha(comDes("HUMANO", 50), sistema), "Esquivar").valorInicial).toBe(25);
+    expect(pericia(calcularFicha(comDes("HUMANO", 120), sistema), "Esquivar").valorInicial).toBe(60);
+  });
+});

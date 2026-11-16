@@ -8,6 +8,7 @@ import {
   SELETOR_SECUNDARIO,
   periciasDaRaca,
   pontosProfissao,
+  valorParaProfissao,
 } from "@/lib/warif/criacao";
 import { campo, rotulo, seta } from "./estilos";
 
@@ -21,7 +22,9 @@ const CATEGORIAS = [
 export default function PassoProfissao({ profissao, onChange, atributos, catalogo, raca }) {
   const { principal, secundario, pericias } = profissao;
   const disponiveis = periciasDaRaca(catalogo, raca);
-  const pontos = pontosProfissao(atributos, principal, secundario);
+  const pontos = pontosProfissao(atributos, principal, secundario, raca);
+  // Valor que o atributo vale na conta (FOR/DES do vampiro contam 57,5).
+  const naConta = (k) => valorParaProfissao(atributos, k, raca).toLocaleString("pt-BR");
   const cheio = pericias.length >= QTD_PERICIAS_PROFISSAO;
 
   function alternar(nome) {
@@ -53,7 +56,7 @@ export default function PassoProfissao({ profissao, onChange, atributos, catalog
                 <option value="">Escolha</option>
                 {SELETOR_PRINCIPAL.map((k) => (
                   <option key={k} value={k}>
-                    {k} ({atributos[k]})
+                    {k} ({naConta(k)})
                   </option>
                 ))}
               </select>
@@ -68,7 +71,7 @@ export default function PassoProfissao({ profissao, onChange, atributos, catalog
                 <option value="">Escolha</option>
                 {SELETOR_SECUNDARIO.map((k) => (
                   <option key={k} value={k}>
-                    {k} ({atributos[k]})
+                    {k} ({naConta(k)})
                   </option>
                 ))}
               </select>
@@ -79,7 +82,7 @@ export default function PassoProfissao({ profissao, onChange, atributos, catalog
         <p className="mt-3 border-t border-wi-line pt-3 font-mono text-[13px]" aria-live="polite">
           {pontos > 0 ? (
             <>
-              {principal} {atributos[principal]} × 2 + {secundario} {atributos[secundario]} × 2 ={" "}
+              {principal} {naConta(principal)} × 2 + {secundario} {naConta(secundario)} × 2 ={" "}
               <b className="text-base text-[var(--ac-p)]">{pontos}</b> pontos
             </>
           ) : (
@@ -129,7 +132,7 @@ export default function PassoProfissao({ profissao, onChange, atributos, catalog
                     />
                     <span className="flex-1">{p.nome}</span>
                     <small className="font-mono text-[10px] text-wi-steel">
-                      {valorInicialPericia(p.valorInicial, atributos)}
+                      {valorInicialPericia(p.valorInicial, atributos, raca)}
                     </small>
                   </label>
                 );

@@ -4,10 +4,11 @@ import Card from "@/components/campanha/Card";
 import { NOMES_ATRIBUTOS } from "@/lib/ficha-visual";
 import { rotuloRaca } from "@/lib/fichas";
 import { ATRIBUTOS } from "@/lib/warif/modificadores";
-import { iniciaisPermitidas, pontosProfissao, pontosInteresse } from "@/lib/warif/criacao";
+import { iniciaisPermitidas, pontosProfissao, pontosInteresse, valorParaProfissao } from "@/lib/warif/criacao";
 
 export default function PassoRevisao({ identidade, atributos, profissao, ganhos, ctx }) {
   const iniciais = iniciaisPermitidas(ctx.catalogo, ctx.raca, ctx.attrs);
+  const naConta = (k) => valorParaProfissao(atributos, k, ctx.raca).toLocaleString("pt-BR");
   const nomes = [...new Set([...Object.keys(ganhos.profissao), ...Object.keys(ganhos.interesse)])].sort((a, b) =>
     a.localeCompare(b, "pt-BR"),
   );
@@ -47,9 +48,11 @@ export default function PassoRevisao({ identidade, atributos, profissao, ganhos,
 
       <Card titulo="Profissão">
         <p className="mb-2 font-mono text-[13px]">
-          {profissao.principal} {atributos[profissao.principal]} × 2 + {profissao.secundario}{" "}
-          {atributos[profissao.secundario]} × 2 ={" "}
-          <b className="text-[var(--ac-p)]">{pontosProfissao(atributos, profissao.principal, profissao.secundario)}</b>{" "}
+          {profissao.principal} {naConta(profissao.principal)} × 2 + {profissao.secundario}{" "}
+          {naConta(profissao.secundario)} × 2 ={" "}
+          <b className="text-[var(--ac-p)]">
+            {pontosProfissao(atributos, profissao.principal, profissao.secundario, ctx.raca)}
+          </b>{" "}
           pontos de profissão · interesse (INT × 2): <b className="text-[var(--ac-p)]">{pontosInteresse(atributos)}</b>
         </p>
         <p className="text-sm">{profissao.pericias.join(", ")}</p>

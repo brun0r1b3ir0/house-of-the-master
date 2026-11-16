@@ -1,9 +1,18 @@
 // Regras da CRIAÇÃO de personagem (funções puras, sem React).
 // Os atributos são distribuídos como "point buy": 460 pontos no total entre os 8
 // atributos, cada um com no mínimo 15 e no máximo 90 na criação.
+//
+// VAMPIRO: FOR e DES ficam fixos em 120 (fora da conta) e os outros seis somam 345.
+// As funções de atributos recebem `raca` opcional; sem ela, vale a regra geral.
 
 import { ATRIBUTOS, normalizarNome } from "./modificadores";
 import { valorInicialPericia } from "./pericias";
+import {
+  ATRIBUTO_FIXO_VAMPIRO,
+  ATRIBUTOS_FIXOS_VAMPIRO,
+  FOR_DES_VAMPIRO_ORCAMENTO,
+  TOTAL_ATRIBUTOS_VAMPIRO,
+} from "./vampiro-fixos";
 
 export const CRIACAO = {
   TOTAL_ATRIBUTOS: 460,
@@ -12,49 +21,84 @@ export const CRIACAO = {
   TETO_PERICIA: 80,
 };
 
-/** Todos os atributos no mínimo (15): sobram 340 pontos para distribuir. */
-export function atributosIniciais() {
-  return Object.fromEntries(ATRIBUTOS.map((k) => [k, CRIACAO.MIN_ATRIBUTO]));
+/**
+ * Como a raça distribui os atributos:
+ *   fixos  -> { chave: valor } que não entram na conta nem podem ser alterados
+ *   livres -> chaves distribuídas entre 15 e 90
+ *   total  -> soma exigida dos livres
+ */
+export function regrasAtributos(raca) {
+  if (raca === "VAMPIRO") {
+    const fixos = Object.fromEntries(ATRIBUTOS_FIXOS_VAMPIRO.map((k) => [k, ATRIBUTO_FIXO_VAMPIRO]));
+    return { fixos, livres: ATRIBUTOS.filter((k) => !(k in fixos)), total: TOTAL_ATRIBUTOS_VAMPIRO };
+  }
+  return { fixos: {}, livres: [...ATRIBUTOS], total: CRIACAO.TOTAL_ATRIBUTOS };
 }
 
-export function somaAtributos(attrs) {
-  return ATRIBUTOS.reduce((s, k) => s + (Number(attrs?.[k]) || 0), 0);
+/** O atributo é fixo para esta raça (não pode ser alterado)? */
+export function atributoFixo(raca, chave) {
+  return chave in regrasAtributos(raca).fixos;
 }
 
-export function pontosRestantes(attrs) {
-  return CRIACAO.TOTAL_ATRIBUTOS - somaAtributos(attrs);
+/** Livres no mínimo (15) e fixos no seu valor: sobram 340 pontos (255 no vampiro). */
+export function atributosIniciais(raca) {
+  const { fixos } = regrasAtributos(raca);
+  return Object.fromEntries(ATRIBUTOS.map((k) => [k, fixos[k] ?? CRIACAO.MIN_ATRIBUTO]));
+}
+
+/** Soma dos atributos que entram na conta da raça (no vampiro, só os seis livres). */
+export function somaAtributos(attrs, raca) {
+  return regrasAtributos(raca).livres.reduce((s, k) => s + (Number(attrs?.[k]) || 0), 0);
+}
+
+export function pontosRestantes(attrs, raca) {
+  return regrasAtributos(raca).total - somaAtributos(attrs, raca);
 }
 
 /** Maior valor que o atributo pode ter agora: limitado pelo máximo e pelos pontos que sobram. */
-export function maximoAtual(attrs, chave) {
+export function maximoAtual(attrs, chave, raca) {
+  const { fixos } = regrasAtributos(raca);
+  if (chave in fixos) return fixos[chave];
   const atual = Number(attrs?.[chave]) || 0;
-  const folga = Math.max(0, pontosRestantes(attrs));
+  const folga = Math.max(0, pontosRestantes(attrs, raca));
   return Math.min(CRIACAO.MAX_ATRIBUTO_INICIAL, atual + folga);
 }
 
-/** Devolve novos atributos com `chave` ajustado para dentro dos limites (nunca estoura os 460). */
-export function ajustarAtributo(attrs, chave, valor) {
-  if (!ATRIBUTOS.includes(chave)) return attrs;
+/** Devolve novos atributos com `chave` ajustado para dentro dos limites (nunca estoura o total). Fixos não mudam. */
+export function ajustarAtributo(attrs, chave, valor, raca) {
+  if (!regrasAtributos(raca).livres.includes(chave)) return attrs;
   const n = Math.round(Number(valor));
   if (!Number.isFinite(n)) return attrs;
-  const final = Math.min(maximoAtual(attrs, chave), Math.max(CRIACAO.MIN_ATRIBUTO, n));
+  const final = Math.min(maximoAtual(attrs, chave, raca), Math.max(CRIACAO.MIN_ATRIBUTO, n));
   return final === attrs[chave] ? attrs : { ...attrs, [chave]: final };
 }
 
 /** Confere se a distribuição está completa e válida. */
-export function validarAtributos(attrs) {
+export function validarAtributos(attrs, raca) {
+  const { fixos, livres, total } = regrasAtributos(raca);
   const erros = [];
-  for (const k of ATRIBUTOS) {
+  for (const [k, v] of Object.entries(fixos))
+    if (attrs?.[k] !== v) erros.push(`${k} é fixo em ${v} para esta raça.`);
+  for (const k of livres) {
     const v = attrs?.[k];
     if (!Number.isInteger(v)) erros.push(`${k} precisa ser um número inteiro.`);
     else if (v < CRIACAO.MIN_ATRIBUTO) erros.push(`${k} não pode ser menor que ${CRIACAO.MIN_ATRIBUTO}.`);
     else if (v > CRIACAO.MAX_ATRIBUTO_INICIAL)
       erros.push(`${k} não pode passar de ${CRIACAO.MAX_ATRIBUTO_INICIAL} na criação.`);
   }
-  const restante = pontosRestantes(attrs);
+  const restante = pontosRestantes(attrs, raca);
   if (restante > 0) erros.push(`Ainda restam ${restante} pontos para distribuir.`);
-  if (restante < 0) erros.push(`Você passou ${-restante} pontos do total de ${CRIACAO.TOTAL_ATRIBUTOS}.`);
+  if (restante < 0) erros.push(`Você passou ${-restante} pontos do total de ${total}.`);
   return { ok: erros.length === 0, restante, erros };
+}
+
+/**
+ * Troca de raça: os atributos só reiniciam quando o tipo de distribuição muda
+ * (entrar ou sair de VAMPIRO). Entre raças comuns, o que foi distribuído fica.
+ */
+export function atributosAoTrocarRaca(attrs, racaAntiga, racaNova) {
+  const tipo = (r) => (r === "VAMPIRO" ? "VAMPIRO" : "COMUM");
+  return tipo(racaAntiga) === tipo(racaNova) ? attrs : atributosIniciais(racaNova);
 }
 
 // ---------------------------------------------------------------------------
@@ -89,10 +133,19 @@ export function periciasDaRaca(catalogo, raca) {
   return (catalogo ?? []).filter((p) => periciaPermitida(p.nome, raca));
 }
 
+/**
+ * Quanto um atributo vale no orçamento de profissão. É o valor DIGITADO, exceto
+ * FOR/DES do vampiro, que contam como FOR_DES_VAMPIRO_ORCAMENTO (57,5) e não 120.
+ */
+export function valorParaProfissao(attrs, chave, raca) {
+  if (raca === "VAMPIRO" && ATRIBUTOS_FIXOS_VAMPIRO.includes(chave)) return FOR_DES_VAMPIRO_ORCAMENTO;
+  return attrs?.[chave] ?? 0;
+}
+
 /** (seletor 1 × 2) + (seletor 2 × 2), com os valores DIGITADOS. EDU+EDU = EDU×4, INT+INT = INT×4. */
-export function pontosProfissao(attrs, principal, secundario) {
+export function pontosProfissao(attrs, principal, secundario, raca) {
   if (!SELETOR_PRINCIPAL.includes(principal) || !SELETOR_SECUNDARIO.includes(secundario)) return 0;
-  return (attrs?.[principal] ?? 0) * 2 + (attrs?.[secundario] ?? 0) * 2;
+  return valorParaProfissao(attrs, principal, raca) * 2 + valorParaProfissao(attrs, secundario, raca) * 2;
 }
 
 /** Pontos de interesse pessoal: INT × 2. Podem ir para qualquer perícia (inclusive as de raça). */
@@ -136,13 +189,13 @@ export function validarProfissao({ principal, secundario, pericias }, catalogo, 
 export const SEM_GANHOS = Object.freeze({ profissao: {}, interesse: {} });
 const BOLSOS = ["profissao", "interesse"];
 
-export function orcamentos(attrs, principal, secundario) {
-  return { profissao: pontosProfissao(attrs, principal, secundario), interesse: pontosInteresse(attrs) };
+export function orcamentos(attrs, principal, secundario, raca) {
+  return { profissao: pontosProfissao(attrs, principal, secundario, raca), interesse: pontosInteresse(attrs) };
 }
 
 /** Valor inicial (do catálogo, com os atributos digitados) de cada perícia que a raça pode ter. */
 export function iniciaisPermitidas(catalogo, raca, attrs) {
-  return new Map(periciasDaRaca(catalogo, raca).map((p) => [p.nome, valorInicialPericia(p.valorInicial, attrs)]));
+  return new Map(periciasDaRaca(catalogo, raca).map((p) => [p.nome, valorInicialPericia(p.valorInicial, attrs, raca)]));
 }
 
 const soma = (mapa) => Object.values(mapa ?? {}).reduce((s, v) => s + v, 0);
@@ -167,7 +220,7 @@ function cortarExcesso(mapa, limite) {
  */
 export function normalizarGanhos(ganhos, ctx) {
   const iniciais = iniciaisPermitidas(ctx.catalogo, ctx.raca, ctx.attrs);
-  const orc = orcamentos(ctx.attrs, ctx.principal, ctx.secundario);
+  const orc = orcamentos(ctx.attrs, ctx.principal, ctx.secundario, ctx.raca);
   const sete = new Set(ctx.pericias ?? []);
 
   const limpar = (mapa, permitido) =>
@@ -196,7 +249,7 @@ export function normalizarGanhos(ganhos, ctx) {
 
 /** Pontos que ainda faltam distribuir em cada bolso. */
 export function pontosRestantesPericias(ganhos, ctx) {
-  const orc = orcamentos(ctx.attrs, ctx.principal, ctx.secundario);
+  const orc = orcamentos(ctx.attrs, ctx.principal, ctx.secundario, ctx.raca);
   return { profissao: orc.profissao - soma(ganhos.profissao), interesse: orc.interesse - soma(ganhos.interesse) };
 }
 
@@ -206,7 +259,7 @@ export function maximoGanho(ganhos, bolso, nome, ctx) {
   if (!iniciais.has(nome)) return 0;
   if (bolso === "profissao" && !(ctx.pericias ?? []).includes(nome)) return 0;
   const outro = bolso === "profissao" ? "interesse" : "profissao";
-  const orc = orcamentos(ctx.attrs, ctx.principal, ctx.secundario)[bolso];
+  const orc = orcamentos(ctx.attrs, ctx.principal, ctx.secundario, ctx.raca)[bolso];
   const atual = ganhos[bolso][nome] ?? 0;
   const porBolso = orc - (soma(ganhos[bolso]) - atual);
   const porTeto = CRIACAO.TETO_PERICIA - iniciais.get(nome) - (ganhos[outro][nome] ?? 0);
@@ -264,10 +317,11 @@ export function ganhosParaEnvio(ganhos) {
   return total;
 }
 
-/** Corpo do POST /criacao/concluir (o contrato combinado com o backend). */
-export function montarEnvio({ atributos, profissao, ganhos }) {
+/** Corpo do POST /criacao/concluir (o contrato combinado com o backend). Fixos da raça (FOR/DES = 120 no vampiro) vão com o valor fixo. */
+export function montarEnvio({ atributos, profissao, ganhos, raca }) {
+  const { fixos } = regrasAtributos(raca);
   return {
-    atributos: Object.fromEntries(ATRIBUTOS.map((k) => [k, atributos[k]])),
+    atributos: Object.fromEntries(ATRIBUTOS.map((k) => [k, fixos[k] ?? atributos[k]])),
     profissao: { principal: profissao.principal, secundario: profissao.secundario, pericias: [...profissao.pericias] },
     ganhos: { profissao: { ...ganhos.profissao }, interesse: { ...ganhos.interesse } },
   };

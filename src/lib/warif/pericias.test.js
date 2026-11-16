@@ -3,6 +3,7 @@ import { valorInicialPericia, periciaEhMagica, periciaEfetiva, metade, quinto } 
 import { pacote, somarPacotes } from "./modificadores";
 import { pacoteSanidade } from "./sanidade";
 import { pacoteRacaFixo } from "./raca";
+import { ESQUIVA_VAMPIRO } from "./vampiro-fixos";
 
 describe("valorInicialPericia", () => {
   it("número fixo", () => {
@@ -13,6 +14,26 @@ describe("valorInicialPericia", () => {
   it("DES_METADE acompanha a DES digitada, arredondando para baixo", () => {
     expect(valorInicialPericia("DES_METADE", { DES: 50 })).toBe(25);
     expect(valorInicialPericia("DES_METADE", { DES: 51 })).toBe(25);
+  });
+
+  it("Esquivar do humano continua DES / 2", () => {
+    expect(valorInicialPericia("DES_METADE", { DES: 50 }, "HUMANO")).toBe(25);
+    expect(valorInicialPericia("DES_METADE", { DES: 120 }, "HUMANO")).toBe(60);
+    expect(valorInicialPericia("DES_METADE", { DES: 77 }, "LOBISOMEM")).toBe(38);
+  });
+
+  it.each([0, 15, 51, 90, 120, 300])("Esquivar do vampiro é sempre 60 (DES %i)", (des) => {
+    expect(valorInicialPericia("DES_METADE", { DES: des }, "VAMPIRO")).toBe(ESQUIVA_VAMPIRO);
+    expect(ESQUIVA_VAMPIRO).toBe(60);
+  });
+
+  it("Esquivar do vampiro é 60 mesmo sem atributos", () => {
+    expect(valorInicialPericia("DES_METADE", undefined, "VAMPIRO")).toBe(60);
+  });
+
+  it("a regra do vampiro só vale para a Esquivar", () => {
+    expect(valorInicialPericia("EDU", { EDU: 40 }, "VAMPIRO")).toBe(40);
+    expect(valorInicialPericia(10, { DES: 120 }, "VAMPIRO")).toBe(10);
   });
 
   it("EDU acompanha a EDU digitada", () => {
